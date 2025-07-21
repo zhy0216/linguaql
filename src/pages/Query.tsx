@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'flowbite-react';
+import CodeMirror from '@uiw/react-codemirror';
+import { StateField } from '@codemirror/state';
+import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
+import { sql } from '@codemirror/lang-sql';
 import dbService, { DatabaseTable, TableDataRequest, QueryResult } from '../services/DBService';
 
 interface QuerySession {
@@ -25,6 +29,75 @@ interface FilterConfig {
 }
 
 interface QueryProps {}
+
+// SQL Statement highlighting extension
+const sqlStatementHighlight = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(_, tr) {
+    if (!tr.selection || !tr.state.doc.length) {
+      return Decoration.none;
+    }
+
+    const cursorPos = tr.selection.main.head;
+    const doc = tr.state.doc;
+    const text = doc.toString();
+
+    // Find the current SQL statement boundaries
+    let statementStart = 0;
+    let statementEnd = text.length;
+
+    // Find the previous semicolon (statement start)
+    for (let i = cursorPos - 1; i >= 0; i--) {
+      if (text[i] === ';') {
+        statementStart = i + 1;
+        break;
+      }
+    }
+
+    // Find the next semicolon (statement end)
+    for (let i = cursorPos; i < text.length; i++) {
+      if (text[i] === ';') {
+        statementEnd = i;
+        break;
+      }
+    }
+
+    // Skip whitespace at the beginning
+    while (statementStart < statementEnd && /\s/.test(text[statementStart])) {
+      statementStart++;
+    }
+
+    // Skip whitespace at the end
+    while (statementEnd > statementStart && /\s/.test(text[statementEnd - 1])) {
+      statementEnd--;
+    }
+
+    // Only highlight if there's actual content
+    if (statementStart < statementEnd && text.slice(statementStart, statementEnd).trim()) {
+      const decorations = [];
+
+      // Get all lines that are part of this statement
+      const startLine = doc.lineAt(statementStart);
+      const endLine = doc.lineAt(statementEnd);
+
+      // Add line decorations for each line in the statement
+      for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+        const line = doc.line(lineNum);
+        const decoration = Decoration.line({
+          class: 'cm-sql-statement-highlight',
+        }).range(line.from);
+        decorations.push(decoration);
+      }
+
+      return Decoration.set(decorations);
+    }
+
+    return Decoration.none;
+  },
+  provide: f => EditorView.decorations.from(f),
+});
 
 const Query: React.FC<QueryProps> = () => {
   // State for managing query sessions
@@ -341,24 +414,48 @@ const Query: React.FC<QueryProps> = () => {
         <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
           {/* Query Input */}
           <div className="p-3 border-b border-gray-200">
-            <textarea
-              id="query-input"
-              placeholder="Enter your SQL query here..."
-              value={queryInput}
-              onChange={e => setQueryInput(e.target.value)}
-              className="w-full font-mono p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-              rows={5}
-            />
+            <div className="border border-gray-300 rounded overflow-hidden">
+              <CodeMirror
+                value={queryInput}
+                onChange={value => setQueryInput(value)}
+                onStatistics={data => console.log(data)}
+                extensions={[sql(), sqlStatementHighlight]}
+                placeholder="Enter your SQL query here..."
+                theme="light"
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: true,
+                  dropCursor: false,
+                  allowMultipleSelections: false,
+                  indentOnInput: true,
+                  bracketMatching: true,
+                  closeBrackets: true,
+                  autocompletion: false,
+                  highlightSelectionMatches: false,
+                  // highlightActiveLineGutter: true,
+                  highlightActiveLine: false,
+                }}
+                style={{
+                  minHeight: '200px',
+                  fontSize: '14px',
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                }}
+              />
+            </div>
           </div>
 
           {/* Toolbar */}
           <div className="p-2 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-            <div>
+            <div className="flex gap-2">
               <div className="relative">
                 <Button size="xs" onClick={() => setShowHistory(!showHistory)}>
                   History
                 </Button>
-
+              </div>
+            </div>
+            <div>
+              <div className="relative">
                 {showHistory && (
                   <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-lg rounded-lg z-10 border border-gray-200">
                     <div className="p-1 max-h-60 overflow-y-auto">

@@ -1,5 +1,6 @@
 import Database from '@tauri-apps/plugin-sql';
 import { invoke } from '@tauri-apps/api/core';
+import { DatabaseConfig, ConnectionResult } from '../types/database';
 
 export interface DatabaseTable {
   name: string;
@@ -23,10 +24,13 @@ export interface QueryResult {
 class DBService {
   private connection: Database | null = null;
 
+  static dbConfigToUrl(config: DatabaseConfig): string {
+    return `postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`;
+  }
   /**
    * 获取数据库连接
    */
-  async getConnection(): Promise<Database> {
+  async getConnection(config?: DatabaseConfig): Promise<Database> {
     // 如果已经有连接，直接返回
     if (this.connection) {
       return this.connection;
@@ -34,8 +38,7 @@ class DBService {
 
     // 从后端获取连接URL
     try {
-      // TODO
-      const db = await Database.load("");
+      const db = await Database.load(config ? DBService.dbConfigToUrl(config) : "");
       this.connection = db;
       return db;
     } catch (error) {
@@ -186,6 +189,26 @@ class DBService {
     } catch (error) {
       console.error('Failed to get table row count:', error);
       return 0;
+    }
+  }
+
+  /**
+   * 测试数据库连接
+   */
+  async testDatabaseConnection(config: DatabaseConfig): Promise<ConnectionResult> {
+
+    // using Database.load
+    try {
+      await this.getConnection(config);
+      return {
+        success: true,
+        message: '连接测试成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `测试连接时发生错误: ${error}`,
+      };
     }
   }
 

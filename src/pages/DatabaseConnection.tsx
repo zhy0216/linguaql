@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { Button, TextInput as Input, Label, Badge, Modal } from 'flowbite-react';
 import { useServerConfigStore } from '../stores/serverConfigStore';
 import { DatabaseConfig, ConnectionResult, ServerConfig } from '../types/database';
+import dbService from '../services/DBService';
 
-interface DatabaseConnectionProps {
-  onDatabaseConnected?: () => void;
-}
 
-const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConnected }) => {
+const DatabaseConnection: React.FC = () => {
   // Zustand store
   const {
     servers,
@@ -66,7 +63,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
     setTestSuccess(false);
 
     try {
-      const result = await invoke<ConnectionResult>('test_database_connection', { config });
+      const result = await dbService.testDatabaseConnection(config);
       setTestResult(result);
       setTestSuccess(result.success);
     } catch (error) {
@@ -93,21 +90,8 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
     setTestResult(null);
 
     try {
-      const result = await invoke<ConnectionResult>('connect_to_database', { config });
+      const result = await dbService.testDatabaseConnection(config);
       setTestResult(result);
-
-      if (result.success) {
-        // Connection successful, new window should open automatically
-        console.log('数据库连接成功，新窗口已打开');
-        // Auto-save on successful connection
-        if (selectedServerId && isDirty) {
-          saveCurrentServer();
-        }
-        // Notify parent component about successful connection
-        if (onDatabaseConnected) {
-          onDatabaseConnected();
-        }
-      }
     } catch (error) {
       setTestResult({
         success: false,

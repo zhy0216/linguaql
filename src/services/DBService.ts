@@ -37,7 +37,7 @@ class DBService {
 
     // 从后端获取连接URL
     try {
-      const db = await Database.load(config ? DBService.dbConfigToUrl(config) : "");
+      const db = await Database.load(config ? DBService.dbConfigToUrl(config) : '');
       this.connection = db;
       return db;
     } catch (error) {
@@ -51,7 +51,7 @@ class DBService {
   async getDatabaseTables(): Promise<DatabaseTable[]> {
     try {
       const db = await this.getConnection();
-      
+
       const query = `
         SELECT 
           table_schema, 
@@ -66,8 +66,8 @@ class DBService {
           table_name
       `;
 
-      const result = await db.select(query) as any[];
-      
+      const result = (await db.select(query)) as any[];
+
       return result.map((row: any) => ({
         schema: row.table_schema,
         name: row.table_name,
@@ -84,14 +84,14 @@ class DBService {
   async getTableData(request: TableDataRequest): Promise<any[]> {
     try {
       const db = await this.getConnection();
-      
+
       const offset = (request.page - 1) * request.pageSize;
       const query = `
         SELECT * FROM "${request.schema}"."${request.name}" 
         LIMIT $1 OFFSET $2
       `;
 
-      const result = await db.select(query, [request.pageSize, offset]) as any[];
+      const result = (await db.select(query, [request.pageSize, offset])) as any[];
       return result;
     } catch (error) {
       console.error('Failed to get table data:', error);
@@ -105,20 +105,20 @@ class DBService {
   async executeQuery(query: string): Promise<QueryResult> {
     try {
       const db = await this.getConnection();
-      
+
       // 判断查询类型
       const trimmedQuery = query.trim().toUpperCase();
-      
+
       if (trimmedQuery.startsWith('SELECT')) {
         // SELECT 查询
-        const result = await db.select(query) as any[];
-        
+        const result = (await db.select(query)) as any[];
+
         // 提取列名（从第一行数据中获取）
         const columns = result.length > 0 ? Object.keys(result[0]) : [];
-        
+
         // 转换为行数组格式
         const rows = result.map((row: any) => columns.map(col => row[col]));
-        
+
         return {
           columns,
           rows,
@@ -126,8 +126,8 @@ class DBService {
         };
       } else {
         // INSERT, UPDATE, DELETE 等修改操作
-        const result = await db.execute(query) as any;
-        
+        const result = (await db.execute(query)) as any;
+
         return {
           columns: [],
           rows: [],
@@ -150,7 +150,7 @@ class DBService {
   async getTableColumns(schema: string, tableName: string): Promise<any[]> {
     try {
       const db = await this.getConnection();
-      
+
       const query = `
         SELECT 
           column_name,
@@ -166,7 +166,7 @@ class DBService {
           ordinal_position
       `;
 
-      const result = await db.select(query, [schema, tableName]) as any[];
+      const result = (await db.select(query, [schema, tableName])) as any[];
       return result;
     } catch (error) {
       console.error('Failed to get table columns:', error);
@@ -180,10 +180,10 @@ class DBService {
   async getTableRowCount(schema: string, tableName: string): Promise<number> {
     try {
       const db = await this.getConnection();
-      
+
       const query = `SELECT COUNT(*) as count FROM "${schema}"."${tableName}"`;
-      const result = await db.select(query) as any[];
-      
+      const result = (await db.select(query)) as any[];
+
       return result[0]?.count || 0;
     } catch (error) {
       console.error('Failed to get table row count:', error);
@@ -195,7 +195,6 @@ class DBService {
    * 测试数据库连接
    */
   async testDatabaseConnection(config: DatabaseConfig): Promise<ConnectionResult> {
-
     // using Database.load
     try {
       await this.getConnection(config);

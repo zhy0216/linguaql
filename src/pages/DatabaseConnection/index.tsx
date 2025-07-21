@@ -1,4 +1,3 @@
-import DatabaseConnection from "./DatabaseConnection";
-
+import DatabaseConnection from './DatabaseConnection';
 
 export default DatabaseConnection;

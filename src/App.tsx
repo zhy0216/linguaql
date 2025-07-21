@@ -8,27 +8,26 @@ function App() {
     // 当在Tauri环境中通过窗口打开时，检查URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get('page');
-    
+
     return pageParam === 'query' ? 'query' : 'connection';
   };
-  
+
   const [currentPage, setCurrentPage] = useState<'connection' | 'query'>(getInitialPage());
-  
+
   // 监听URL参数变化
   useEffect(() => {
     const handleUrlChange = () => {
       setCurrentPage(getInitialPage());
     };
-    
+
     window.addEventListener('popstate', handleUrlChange);
     return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
-
   return (
     <div className="App">
       {currentPage === 'connection' ? (
-        <DatabaseConnection onDatabaseConnected={() => setCurrentPage('query')}/>
+        <DatabaseConnection onDatabaseConnected={() => setCurrentPage('query')} />
       ) : (
         <Query />
       )}

@@ -6,7 +6,7 @@ interface ServerConfigState {
   servers: ServerConfig[];
   selectedServerId: string | null;
   currentConfig: DatabaseConfig;
-  
+
   // Actions
   addServer: (server: ServerConfig) => void;
   updateServer: (id: string, updates: Partial<ServerConfig>) => void;
@@ -32,37 +32,37 @@ export const useServerConfigStore = create<ServerConfigState>()(
       selectedServerId: null,
       currentConfig: defaultConfig,
 
-      addServer: (server) =>
-        set((state) => ({
+      addServer: server =>
+        set(state => ({
           servers: [...state.servers, server],
         })),
 
       updateServer: (id, updates) =>
-        set((state) => ({
-          servers: state.servers.map((server) =>
+        set(state => ({
+          servers: state.servers.map(server =>
             server.id === id ? { ...server, ...updates } : server
           ),
         })),
 
-      deleteServer: (id) =>
-        set((state) => ({
-          servers: state.servers.filter((server) => server.id !== id),
+      deleteServer: id =>
+        set(state => ({
+          servers: state.servers.filter(server => server.id !== id),
           selectedServerId: state.selectedServerId === id ? null : state.selectedServerId,
         })),
 
-      setSelectedServer: (id) =>
+      setSelectedServer: id =>
         set(() => ({
           selectedServerId: id,
         })),
 
-      setCurrentConfig: (config) =>
+      setCurrentConfig: config =>
         set(() => ({
           currentConfig: config,
         })),
 
-      getServerById: (id) => {
+      getServerById: id => {
         const state = get();
-        return state.servers.find((server) => server.id === id);
+        return state.servers.find(server => server.id === id);
       },
 
       clearServers: () =>
@@ -74,7 +74,7 @@ export const useServerConfigStore = create<ServerConfigState>()(
     }),
     {
       name: 'server-config-storage', // unique name for localStorage
-      partialize: (state) => ({
+      partialize: state => ({
         servers: state.servers,
       }), // only persist servers
     }

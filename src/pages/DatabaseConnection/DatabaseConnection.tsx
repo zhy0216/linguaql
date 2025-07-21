@@ -109,8 +109,6 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected }) => {
     }
   };
 
-
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,8 +123,6 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected }) => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedServerId, isDirty, config]);
-
-
 
   const addNewServer = () => {
     if (!newServerName.trim()) return;

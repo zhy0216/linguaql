@@ -21,22 +21,22 @@ export interface QueryResult {
 }
 
 class DBService {
-  private connections: Map<string, Database> = new Map();
+  private connection: Database | null = null;
 
   /**
    * 获取数据库连接
    */
-  async getConnection(windowId: string): Promise<Database> {
+  async getConnection(): Promise<Database> {
     // 如果已经有连接，直接返回
-    if (this.connections.has(windowId)) {
-      return this.connections.get(windowId)!;
+    if (this.connection) {
+      return this.connection;
     }
 
     // 从后端获取连接URL
     try {
-      const connectionUrl = await invoke<string>('get_connection_url', { windowId });
-      const db = await Database.load(connectionUrl);
-      this.connections.set(windowId, db);
+      // TODO
+      const db = await Database.load("");
+      this.connection = db;
       return db;
     } catch (error) {
       throw new Error(`Failed to get database connection: ${error}`);
@@ -46,9 +46,9 @@ class DBService {
   /**
    * 获取数据库表列表
    */
-  async getDatabaseTables(windowId: string): Promise<DatabaseTable[]> {
+  async getDatabaseTables(): Promise<DatabaseTable[]> {
     try {
-      const db = await this.getConnection(windowId);
+      const db = await this.getConnection();
       
       const query = `
         SELECT 
@@ -79,9 +79,9 @@ class DBService {
   /**
    * 获取表数据（分页）
    */
-  async getTableData(windowId: string, request: TableDataRequest): Promise<any[]> {
+  async getTableData(request: TableDataRequest): Promise<any[]> {
     try {
-      const db = await this.getConnection(windowId);
+      const db = await this.getConnection();
       
       const offset = (request.page - 1) * request.pageSize;
       const query = `
@@ -100,9 +100,9 @@ class DBService {
   /**
    * 执行SQL查询
    */
-  async executeQuery(windowId: string, query: string): Promise<QueryResult> {
+  async executeQuery(query: string): Promise<QueryResult> {
     try {
-      const db = await this.getConnection(windowId);
+      const db = await this.getConnection();
       
       // 判断查询类型
       const trimmedQuery = query.trim().toUpperCase();
@@ -145,9 +145,9 @@ class DBService {
   /**
    * 获取表的列信息
    */
-  async getTableColumns(windowId: string, schema: string, tableName: string): Promise<any[]> {
+  async getTableColumns(schema: string, tableName: string): Promise<any[]> {
     try {
-      const db = await this.getConnection(windowId);
+      const db = await this.getConnection();
       
       const query = `
         SELECT 
@@ -175,9 +175,9 @@ class DBService {
   /**
    * 获取表的行数
    */
-  async getTableRowCount(windowId: string, schema: string, tableName: string): Promise<number> {
+  async getTableRowCount(schema: string, tableName: string): Promise<number> {
     try {
-      const db = await this.getConnection(windowId);
+      const db = await this.getConnection();
       
       const query = `SELECT COUNT(*) as count FROM "${schema}"."${tableName}"`;
       const result = await db.select(query) as any[];
@@ -192,26 +192,15 @@ class DBService {
   /**
    * 关闭连接
    */
-  async closeConnection(windowId: string): Promise<void> {
-    const connection = this.connections.get(windowId);
-    if (connection) {
+  async closeConnection(): Promise<void> {
+    if (this.connection) {
       try {
-        await connection.close();
-        this.connections.delete(windowId);
+        await this.connection.close();
+        this.connection = null;
       } catch (error) {
         console.error('Failed to close connection:', error);
       }
     }
-  }
-
-  /**
-   * 关闭所有连接
-   */
-  async closeAllConnections(): Promise<void> {
-    const promises = Array.from(this.connections.keys()).map(windowId => 
-      this.closeConnection(windowId)
-    );
-    await Promise.all(promises);
   }
 }
 

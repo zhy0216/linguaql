@@ -1,54 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Button, TextInput as Input, Label, Badge, Modal } from 'flowbite-react';
-
-interface DatabaseConfig {
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  database: string;
-}
-
-interface ConnectionResult {
-  success: boolean;
-  message: string;
-}
-
-interface ServerConfig {
-  id: string;
-  name: string;
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  database: string;
-  createdAt: string;
-}
+import { useServerConfigStore } from '../stores/serverConfigStore';
+import { DatabaseConfig, ConnectionResult, ServerConfig } from '../types/database';
 
 interface DatabaseConnectionProps {
   onDatabaseConnected?: () => void;
 }
 
 const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConnected }) => {
-  const [config, setConfig] = useState<DatabaseConfig>({
-    host: 'localhost',
-    port: 5432,
-    username: '',
-    password: '',
-    database: '',
-  });
+  // Zustand store
+  const {
+    servers,
+    selectedServerId,
+    currentConfig: config,
+    addServer,
+    updateServer,
+    deleteServer,
+    setSelectedServer,
+    setCurrentConfig: setConfig,
+  } = useServerConfigStore();
 
+  // Local component state
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [testResult, setTestResult] = useState<ConnectionResult | null>(null);
   const [testSuccess, setTestSuccess] = useState(false);
-  const [servers, setServers] = useState<ServerConfig[]>([]);
   const [showNewServerModal, setShowNewServerModal] = useState(false);
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [newServerName, setNewServerName] = useState('');
   const [serverUrl, setServerUrl] = useState('');
-  const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [originalConfig, setOriginalConfig] = useState<DatabaseConfig | null>(null);
 
@@ -137,13 +118,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
     }
   };
 
-  // Load servers from localStorage
-  useEffect(() => {
-    const savedServers = localStorage.getItem('linguaql-servers');
-    if (savedServers) {
-      setServers(JSON.parse(savedServers));
-    }
-  }, []);
+
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -160,11 +135,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedServerId, isDirty, config]);
 
-  // Save servers to localStorage
-  const saveServers = (newServers: ServerConfig[]) => {
-    setServers(newServers);
-    localStorage.setItem('linguaql-servers', JSON.stringify(newServers));
-  };
+
 
   const addNewServer = () => {
     if (!newServerName.trim()) return;
@@ -180,8 +151,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
       createdAt: new Date().toISOString(),
     };
 
-    const updatedServers = [...servers, newServer];
-    saveServers(updatedServers);
+    addServer(newServer);
     setNewServerName('');
     setShowNewServerModal(false);
   };
@@ -207,8 +177,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
         createdAt: new Date().toISOString(),
       };
 
-      const updatedServers = [...servers, newServer];
-      saveServers(updatedServers);
+      addServer(newServer);
       setServerUrl('');
       setShowUrlModal(false);
     } catch (error) {
@@ -226,7 +195,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
     };
     setConfig(newConfig);
     setOriginalConfig(newConfig);
-    setSelectedServerId(server.id);
+    setSelectedServer(server.id);
     setIsDirty(false);
     setTestResult(null);
   };
@@ -234,16 +203,13 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
   const saveCurrentServer = () => {
     if (!selectedServerId) return;
 
-    const updatedServers = servers.map(server =>
-      server.id === selectedServerId ? { ...server, ...config } : server
-    );
-    saveServers(updatedServers);
+    updateServer(selectedServerId, config);
     setOriginalConfig(config);
     setIsDirty(false);
   };
 
   const clearSelection = () => {
-    setSelectedServerId(null);
+    setSelectedServer(null);
     setOriginalConfig(null);
     setIsDirty(false);
     setTestResult(null);
@@ -257,11 +223,10 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
     });
   };
 
-  const deleteServer = (serverId: string) => {
-    const updatedServers = servers.filter(s => s.id !== serverId);
-    saveServers(updatedServers);
+  const handleDeleteServer = (serverId: string) => {
+    deleteServer(serverId);
     if (selectedServerId === serverId) {
-      setSelectedServerId(null);
+      setSelectedServer(null);
     }
   };
 
@@ -311,7 +276,7 @@ const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConne
                       className="ml-1 h-6 w-6 min-w-6 p-0 flex items-center justify-center"
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
-                        deleteServer(server.id);
+                        handleDeleteServer(server.id);
                       }}
                     >
                       ×

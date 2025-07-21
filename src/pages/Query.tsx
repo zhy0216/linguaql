@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'flowbite-react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import dbService, { DatabaseTable, TableDataRequest, QueryResult } from '../services/DBService';
 
 interface QuerySession {
@@ -80,12 +79,8 @@ const Query: React.FC = () => {
   // Fetch database tables
   const fetchDatabaseTables = async () => {
     try {
-      // Get the current window's label (ID)
-      const currentWindow = getCurrentWindow();
-      const windowId = currentWindow.label;
-      
       // Use DBService to get database tables
-      const tables = await dbService.getDatabaseTables(windowId);
+      const tables = await dbService.getDatabaseTables();
       setDatabaseTables(tables);
     } catch (error) {
       console.error('Failed to fetch database tables:', error);
@@ -101,10 +96,6 @@ const Query: React.FC = () => {
     setTableData(null); // Clear previous data
     
     try {
-      // Get the current window's label (ID)
-      const currentWindow = getCurrentWindow();
-      const windowId = currentWindow.label;
-      
       // Create the request object
       const request: TableDataRequest = {
         schema: table.schema,
@@ -114,7 +105,7 @@ const Query: React.FC = () => {
       };
       
       // Use DBService to get table data
-      const result = await dbService.getTableData(windowId, request);
+      const result = await dbService.getTableData(request);
       
       // Extract column names from the first row
       const columns = result.length > 0 ? Object.keys(result[0]) : [];
@@ -148,11 +139,7 @@ const Query: React.FC = () => {
     setQueryResult(null);
     
     try {
-      // Get the current window's label (ID)
-      const currentWindow = getCurrentWindow();
-      const windowId = currentWindow.label;
-      
-      const result = await dbService.executeQuery(windowId, queryInput);
+      const result = await dbService.executeQuery(queryInput);
       
       setQueryResult({
         columns: result.columns,

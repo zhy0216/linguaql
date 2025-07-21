@@ -14,6 +14,16 @@ interface Pagination {
   total?: number;
 }
 
+interface SortConfig {
+  column: string;
+  direction: 'asc' | 'desc';
+}
+
+interface FilterConfig {
+  column: string;
+  value: string;
+}
+
 const Query: React.FC = () => {
   // State for managing query sessions
   const [querySessions, setQuerySessions] = useState<QuerySession[]>([]);
@@ -37,6 +47,11 @@ const Query: React.FC = () => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [queryHistory, setQueryHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // State for sorting and filtering
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([]);
+  const [filteredAndSortedData, setFilteredAndSortedData] = useState<QueryResult | null>(null);
 
   // Initialize with a default session on component mount
   useEffect(() => {
@@ -171,6 +186,101 @@ const Query: React.FC = () => {
     setQueryInput(query);
     setShowHistory(false);
   };
+  
+  // Handle column sorting
+  const handleSort = (column: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.column === column && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ column, direction });
+  };
+  
+  // Apply filtering and sorting to data
+  const applyFilterAndSort = (data: QueryResult) => {
+    if (!data) return data;
+    
+    let processedData = { ...data };
+    
+    // Apply filtering - support multiple filters
+    filterConfigs.forEach(filterConfig => {
+      if (filterConfig.column && filterConfig.value) {
+        const columnIndex = data.columns.indexOf(filterConfig.column);
+        if (columnIndex !== -1) {
+          processedData.rows = processedData.rows.filter(row => {
+            const cellValue = row[columnIndex];
+            return cellValue !== null && 
+                   String(cellValue).toLowerCase().includes(filterConfig.value.toLowerCase());
+          });
+        }
+      }
+    });
+    
+    // Apply sorting
+    if (sortConfig) {
+      const columnIndex = data.columns.indexOf(sortConfig.column);
+      if (columnIndex !== -1) {
+        processedData.rows = [...processedData.rows].sort((a, b) => {
+          const aVal = a[columnIndex];
+          const bVal = b[columnIndex];
+          
+          // Handle null values
+          if (aVal === null && bVal === null) return 0;
+          if (aVal === null) return sortConfig.direction === 'asc' ? -1 : 1;
+          if (bVal === null) return sortConfig.direction === 'asc' ? 1 : -1;
+          
+          // Convert to strings for comparison
+          const aStr = String(aVal);
+          const bStr = String(bVal);
+          
+          // Try numeric comparison first
+          const aNum = Number(aVal);
+          const bNum = Number(bVal);
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+          }
+          
+          // String comparison
+          const comparison = aStr.localeCompare(bStr);
+          return sortConfig.direction === 'asc' ? comparison : -comparison;
+        });
+      }
+    }
+    
+    return processedData;
+  };
+  
+  // Add a new filter
+  const addFilter = () => {
+    setFilterConfigs([...filterConfigs, { column: '', value: '' }]);
+  };
+  
+  // Update a specific filter
+  const updateFilter = (index: number, updates: Partial<FilterConfig>) => {
+    const newFilters = [...filterConfigs];
+    newFilters[index] = { ...newFilters[index], ...updates };
+    setFilterConfigs(newFilters);
+  };
+  
+  // Remove a specific filter
+  const removeFilter = (index: number) => {
+    setFilterConfigs(filterConfigs.filter((_, i) => i !== index));
+  };
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilterConfigs([]);
+  };
+  
+  // Update filtered and sorted data when tableData, sortConfig, or filterConfigs changes
+  useEffect(() => {
+    if (tableData) {
+      const processed = applyFilterAndSort(tableData);
+      setFilteredAndSortedData(processed);
+    } else {
+      setFilteredAndSortedData(null);
+    }
+  }, [tableData, sortConfig, filterConfigs]);
 
   return (
     <div className="flex h-screen w-full">
@@ -283,31 +393,114 @@ const Query: React.FC = () => {
           </div>
         </div>
         
+        {/* Filter Controls */}
+        {(tableData || queryResult) && (
+          <div className="p-2 border-b border-gray-200 bg-gray-100">
+            <div className="flex gap-2 items-center mb-2">
+              <span className="text-xs font-medium">Filters:</span>
+              <Button
+                size="xs"
+                color="blue"
+                onClick={addFilter}
+              >
+                Add Filter
+              </Button>
+              {filterConfigs.length > 0 && (
+                <Button
+                  size="xs"
+                  color="gray"
+                  onClick={clearAllFilters}
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+            
+            {filterConfigs.length === 0 ? (
+              <div className="text-xs text-gray-500">No filters applied</div>
+            ) : (
+              <div className="space-y-2">
+                {filterConfigs.map((filter, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <select 
+                      className="text-xs border border-gray-300 rounded px-2 py-1"
+                      value={filter.column}
+                      onChange={(e) => updateFilter(index, { column: e.target.value })}
+                    >
+                      <option value="">Select column</option>
+                      {(filteredAndSortedData || tableData || queryResult)?.columns.map((column, colIndex) => (
+                        <option key={colIndex} value={column}>{column}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Filter value"
+                      className="text-xs border border-gray-300 rounded px-2 py-1 flex-1 max-w-xs"
+                      value={filter.value}
+                      onChange={(e) => updateFilter(index, { value: e.target.value })}
+                      disabled={!filter.column}
+                    />
+                    <Button
+                      size="xs"
+                      color="failure"
+                      onClick={() => removeFilter(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* Query Results */}
         <div className="flex-1 p-3 overflow-auto max-w-4xl">
           {/* Show table data when a table is selected */}
-          {tableData && selectedTable ? (
+          {filteredAndSortedData && selectedTable ? (
             <div className="max-w-4xl">
               <h3 className="text-sm font-semibold mb-2">
                 {selectedTable.schema}.{selectedTable.name}
                 {isLoadingTableData && <span className="ml-2 text-xs text-gray-500">(Loading...)</span>}
+                {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
+                  <span className="ml-2 text-xs text-blue-600">
+                    ({filterConfigs.filter(f => f.column && f.value).length} filter{filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
+                  </span>
+                )}
               </h3>
               
-              {tableData.rows.length === 0 ? (
-                <div className="text-sm text-gray-500">Table has no data</div>
+              {filteredAndSortedData.rows.length === 0 ? (
+                <div className="text-sm text-gray-500">
+                  {filterConfigs.some(f => f.column && f.value) ? 'No data matches the filters' : 'Table has no data'}
+                </div>
               ) : (
                 <>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left text-gray-700">
                       <thead className="text-xs text-gray-700 bg-gray-50">
                         <tr>
-                          {tableData.columns.map((column, index) => (
-                            <th key={index} className="px-4 py-2">{column}</th>
+                          {filteredAndSortedData.columns.map((column, index) => (
+                            <th 
+                              key={index} 
+                              className="px-4 py-2 cursor-pointer hover:bg-gray-100 select-none"
+                              onClick={() => handleSort(column)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>{column}</span>
+                                <span className="ml-1">
+                                  {sortConfig?.column === column ? (
+                                    sortConfig.direction === 'asc' ? '↑' : '↓'
+                                  ) : (
+                                    '↕'
+                                  )}
+                                </span>
+                              </div>
+                            </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {tableData.rows.map((row, rowIndex) => (
+                        {filteredAndSortedData.rows.map((row, rowIndex) => (
                           <tr key={rowIndex} className="border-b hover:bg-gray-50">
                             {row.map((cell, cellIndex) => (
                               <td key={cellIndex} className="px-4 py-2">{cell === null ? 'NULL' : String(cell)}</td>
@@ -321,7 +514,12 @@ const Query: React.FC = () => {
                   {/* Pagination Controls */}
                   <div className="flex justify-between items-center mt-4 text-xs">
                     <div>
-                      Showing {tableData.rows.length} rows
+                      Showing {filteredAndSortedData.rows.length} rows
+                      {filterConfigs.some(f => f.column && f.value) && tableData && (
+                        <span className="ml-2 text-gray-500">
+                          (filtered from {tableData.rows.length} total)
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button 
@@ -334,7 +532,7 @@ const Query: React.FC = () => {
                       <span>Page {pagination.page}</span>
                       <Button 
                         size="xs" 
-                        disabled={tableData.rows.length < pagination.pageSize || isLoadingTableData}
+                        disabled={tableData && tableData.rows.length < pagination.pageSize || isLoadingTableData}
                         onClick={() => loadTableData(selectedTable, pagination.page + 1, pagination.pageSize)}
                       >
                         Next
@@ -353,31 +551,71 @@ const Query: React.FC = () => {
             </div>
           ) : queryResult ? (
             <div>
-              <h3 className="text-sm font-semibold mb-2">Query Results</h3>
-              {queryResult.rows.length === 0 ? (
-                <div className="text-sm text-gray-500">No results found</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left text-gray-700">
-                    <thead className="text-xs text-gray-700 bg-gray-50">
-                      <tr>
-                        {queryResult.columns.map((column, index) => (
-                          <th key={index} className="px-4 py-2">{column}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {queryResult.rows.map((row, rowIndex) => (
-                        <tr key={rowIndex} className="border-b hover:bg-gray-50">
-                          {row.map((cell, cellIndex) => (
-                            <td key={cellIndex} className="px-4 py-2">{cell === null ? 'NULL' : String(cell)}</td>
+              <h3 className="text-sm font-semibold mb-2">
+                Query Results
+                {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
+                  <span className="ml-2 text-xs text-blue-600">
+                    ({filterConfigs.filter(f => f.column && f.value).length} filter{filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
+                  </span>
+                )}
+                {sortConfig && (
+                  <span className="ml-2 text-xs text-green-600">
+                    (Sorted by {sortConfig.column} {sortConfig.direction})
+                  </span>
+                )}
+              </h3>
+              {(() => {
+                const processedResult = applyFilterAndSort(queryResult);
+                return processedResult.rows.length === 0 ? (
+                  <div className="text-sm text-gray-500">
+                    {filterConfigs.some(f => f.column && f.value) ? 'No results match the filters' : 'No results found'}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left text-gray-700">
+                      <thead className="text-xs text-gray-700 bg-gray-50">
+                        <tr>
+                          {processedResult.columns.map((column, index) => (
+                            <th 
+                              key={index} 
+                              className="px-4 py-2 cursor-pointer hover:bg-gray-100 select-none"
+                              onClick={() => handleSort(column)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>{column}</span>
+                                <span className="ml-1">
+                                  {sortConfig?.column === column ? (
+                                    sortConfig.direction === 'asc' ? '↑' : '↓'
+                                  ) : (
+                                    '↕'
+                                  )}
+                                </span>
+                              </div>
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody>
+                        {processedResult.rows.map((row, rowIndex) => (
+                          <tr key={rowIndex} className="border-b hover:bg-gray-50">
+                            {row.map((cell, cellIndex) => (
+                              <td key={cellIndex} className="px-4 py-2">{cell === null ? 'NULL' : String(cell)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-4 text-xs text-gray-500">
+                      Showing {processedResult.rows.length} rows
+                      {filterConfigs.some(f => f.column && f.value) && (
+                        <span className="ml-2">
+                          (filtered from {queryResult.rows.length} total)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="text-sm text-gray-500">

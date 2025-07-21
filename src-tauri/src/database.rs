@@ -1,5 +1,24 @@
 use serde::{Deserialize, Serialize};
-use tokio_postgres::NoTls;
+use tokio_postgres::{NoTls, Client};
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
+
+// 全局连接池，将窗口ID映射到数据库连接
+static DB_CONNECTIONS: Lazy<Arc<Mutex<HashMap<String, Arc<Client>>>>> = 
+    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+
+// 存储连接到客户端的映射
+pub fn store_connection(window_id: &str, client: Client) -> Arc<Client> {
+    let client = Arc::new(client);
+    DB_CONNECTIONS.lock().unwrap().insert(window_id.to_string(), client.clone());
+    client
+}
+
+// 获取指定窗口ID的数据库连接
+pub fn get_connection(window_id: &str) -> Option<Arc<Client>> {
+    DB_CONNECTIONS.lock().unwrap().get(window_id).cloned()
+}
 
 // Helper function to get the first available database
 async fn get_first_database(config: &DatabaseConfig) -> Result<String, Box<dyn std::error::Error>> {
@@ -96,7 +115,7 @@ pub async fn test_postgres_connection(config: &DatabaseConfig) -> ConnectionResu
     }
 }
 
-pub async fn establish_postgres_connection(config: &DatabaseConfig) -> ConnectionResult {
+pub async fn establish_postgres_connection(config: &DatabaseConfig, window_id: &str) -> ConnectionResult {
     let database_name = if config.database.is_empty() {
         // If no database specified, try to get the first available database
         match get_first_database(config).await {
@@ -116,13 +135,16 @@ pub async fn establish_postgres_connection(config: &DatabaseConfig) -> Connectio
     );
 
     match tokio_postgres::connect(&connection_string, NoTls).await {
-        Ok((_client, connection)) => {
+        Ok((client, connection)) => {
             // Store the connection for later use
             tokio::spawn(async move {
                 if let Err(e) = connection.await {
                     eprintln!("connection error: {}", e);
                 }
             });
+            
+            // 存储窗口ID和连接的映射
+            store_connection(window_id, client);
 
             ConnectionResult {
                 success: true,

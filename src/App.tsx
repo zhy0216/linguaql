@@ -1,4 +1,4 @@
-import DatabaseConnection from "./components/DatabaseConnection";
+import DatabaseConnection from './components/DatabaseConnection';
 
 function App() {
   return (

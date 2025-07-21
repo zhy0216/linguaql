@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import './DatabaseConnection.css';
+import { Button, TextInput as Input, Label, Badge, Modal } from 'flowbite-react';
 
 interface DatabaseConfig {
   host: string;
@@ -255,234 +253,266 @@ const DatabaseConnection: React.FC = () => {
   };
 
   return (
-    <div className="database-connection">
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <h3>服务器管理</h3>
-        </div>
-        
-        <div className="sidebar-actions">
-          <Button 
-            variant="outline"
-            className="w-full mb-2"
-            onClick={() => setShowNewServerModal(true)}
-          >
-            + 新建服务器
-          </Button>
-          <Button 
-            variant="outline"
-            className="w-full"
-            onClick={() => setShowUrlModal(true)}
-          >
-            + 从 URL 添加
-          </Button>
-        </div>
-        
-        <div className="server-list">
-          <h4>服务器列表</h4>
-          {servers.length === 0 ? (
-            <div className="empty-list">暂无服务器</div>
-          ) : (
-            servers.map(server => (
-              <div 
-                key={server.id} 
-                className={`server-item ${selectedServerId === server.id ? 'selected' : ''}`}
-                onClick={() => selectServer(server)}
-              >
-                <div className="server-info">
-                  <div className="server-name">
-                    {server.name}
-                    {selectedServerId === server.id && isDirty && <span className="dirty-indicator"> *</span>}
-                  </div>
-                  <div className="server-details">{server.host}:{server.port}</div>
-                </div>
+    <div className="flex h-full w-full">
+      <div className="w-64 border-r border-gray-200 bg-gray-50 p-3 overflow-y-auto flex flex-col">
+              <div className="mb-4 flex items-center">
+                <h3 className="text-lg font-semibold">服务器管理</h3>
+              </div>
+              
+              <div className="mb-4 flex flex-col gap-2">
                 <Button 
-                  variant="destructive"
-                  size="sm"
-                  className="ml-auto"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteServer(server.id);
-                  }}
+                  className="w-full"
+                  onClick={() => setShowNewServerModal(true)}
                 >
-                  ×
+                  + 新建服务器
+                </Button>
+                <Button 
+                  color="light"
+                  className="w-full"
+                  onClick={() => setShowUrlModal(true)}
+                >
+                  + 从 URL 添加
                 </Button>
               </div>
-            ))
-          )}
-        </div>
         
-        <div className="sidebar-footer">
-          {selectedServerId && (
-            <div className="selection-controls">
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={clearSelection}
-              >
-                清除选择
-              </Button>
-              {isDirty && (
-                <Button 
-                  variant="default"
-                  size="sm"
-                  onClick={saveCurrentServer}
-                >
-                  保存更改 (⌘S)
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-500 mb-2">服务器列表</h4>
+                {servers.length === 0 ? (
+                  <div className="text-sm text-gray-500">暂无服务器</div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {servers.map(server => (
+                      <div 
+                        key={server.id} 
+                        className={`p-3 mb-2 rounded-md border cursor-pointer hover:bg-gray-100 ${selectedServerId === server.id ? 'border-blue-500 bg-blue-50' : ''}`}
+                        onClick={() => selectServer(server)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-medium">
+                              {server.name}
+                              {selectedServerId === server.id && isDirty && <Badge color="warning" className="ml-2">*</Badge>}
+                            </div>
+                            <div className="text-xs text-gray-500">{server.host}:{server.port}</div>
+                          </div>
+                          <Button 
+                            color="failure"
+                            size="xs"
+                            className="ml-2"
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              deleteServer(server.id);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+        
+              <div className="mt-4 pt-4 border-t">
+                {selectedServerId && (
+                  <div className="flex flex-col gap-2 w-full">
+                  <Button 
+                    color="light"
+                    size="sm"
+                    onClick={clearSelection}
+                    className="flex justify-center items-center"
+                  >
+                    清除选择
+                  </Button>
+                  {isDirty && (
+                    <Button 
+                      color="blue"
+                      size="sm"
+                      onClick={saveCurrentServer}
+                      className="flex justify-center items-center"
+                    >
+                      保存更改 (⌘S)
+                    </Button>
+                  )}
+                </div>
+                )}
+              </div>
       </div>
       
       {selectedServerId && (
-        <div className="connection-form">
-          <h2>
-            PostgreSQL 数据库连接
-            {isDirty && <span className="dirty-indicator"> *</span>}
-          </h2>
-        
-        <div className="form-group">
-          <label htmlFor="host">主机地址 *</label>
-          <Input
-            type="text"
-            id="host"
-            name="host"
-            value={config.host}
-            onChange={handleInputChange}
-            placeholder="localhost"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="port">端口</label>
-          <Input
-            type="number"
-            id="port"
-            name="port"
-            value={config.port}
-            onChange={handleInputChange}
-            placeholder="5432"
-            min="1"
-            max="65535"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="username">用户名 *</label>
-          <Input
-            type="text"
-            id="username"
-            name="username"
-            value={config.username}
-            onChange={handleInputChange}
-            placeholder="postgres"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="password">密码</label>
-          <Input
-            type="password"
-            id="password"
-            name="password"
-            value={config.password}
-            onChange={handleInputChange}
-            placeholder="请输入密码"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="database">数据库名</label>
-          <Input
-            type="text"
-            id="database"
-            name="database"
-            value={config.database}
-            onChange={handleInputChange}
-            placeholder="留空则使用默认数据库"
-          />
-        </div>
-
-        <div className="button-group flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={testConnection}
-            disabled={isTestingConnection || isConnecting}
-          >
-            {isTestingConnection ? '测试中...' : '测试连接'}
-          </Button>
+        <div className="flex-1 p-6 flex flex-col">
+          <div className="max-w-3xl mx-auto flex flex-col w-full">
+            <h2 className="text-2xl font-bold mb-6 flex items-center justify-between">
+              PostgreSQL 数据库连接
+              {isDirty && <Badge color="warning" className="ml-2">未保存</Badge>}
+            </h2>
           
-          <Button
-            type="button"
-            variant="default"
-            onClick={connectToDatabase}
-            disabled={isTestingConnection || isConnecting}
-          >
-            {isConnecting ? '连接中...' : '连接'}
-          </Button>
-        </div>
+            <div className="mb-4 flex flex-col">
+              <div className="flex mb-2">
+                <Label htmlFor="host" className="flex items-center">主机地址 *</Label>
+              </div>
+              <Input
+                type="text"
+                id="host"
+                name="host"
+                value={config.host}
+                onChange={handleInputChange}
+                placeholder="localhost"
+                required
+                className="w-full"
+              />
+            </div>
+  
+            <div className="mb-4 flex flex-col">
+              <div className="flex mb-2">
+                <Label htmlFor="port" className="flex items-center">端口</Label>
+              </div>
+              <Input
+                type="number"
+                id="port"
+                name="port"
+                value={config.port}
+                onChange={handleInputChange}
+                placeholder="5432"
+                min="1"
+                max="65535"
+                className="w-full"
+              />
+            </div>
+  
+            <div className="mb-4 flex flex-col">
+              <div className="flex mb-2">
+                <Label htmlFor="username" className="flex items-center">用户名 *</Label>
+              </div>
+              <Input
+                type="text"
+                id="username"
+                name="username"
+                value={config.username}
+                onChange={handleInputChange}
+                placeholder="postgres"
+                required
+                className="w-full"
+              />
+            </div>
+  
+            <div className="mb-4 flex flex-col">
+              <div className="flex mb-2">
+                <Label htmlFor="password" className="flex items-center">密码</Label>
+              </div>
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                value={config.password}
+                onChange={handleInputChange}
+                placeholder="请输入密码"
+                className="w-full"
+              />
+            </div>
+  
+            <div className="mb-4">
+              <div className="block mb-2">
+                <Label htmlFor="database">数据库名称</Label>
+              </div>
+              <Input
+                type="text"
+                id="database"
+                name="database"
+                value={config.database}
+                onChange={handleInputChange}
+                placeholder="留空则使用默认数据库"
+                className="w-full"
+              />
+            </div>
 
-        {testResult && (
-          <div className={`result-message ${testResult.success ? 'success' : 'error'}`}>
-            <div className="result-icon">
-              {testResult.success ? '✅' : '❌'}
+            <div className="flex space-x-2 mt-6">
+              <Button
+                color="light"
+                onClick={testConnection}
+                disabled={isTestingConnection || isConnecting}
+              >
+                {isTestingConnection ? '测试中...' : '测试连接'}
+              </Button>
+              
+              <Button
+                color="blue"
+                onClick={connectToDatabase}
+                disabled={isTestingConnection || isConnecting}
+              >
+                {isConnecting ? '连接中...' : '连接'}
+              </Button>
             </div>
-            <div className="result-text">
-              {testResult.message}
-            </div>
+  
+            {testResult && (
+              <div className={`mt-4 p-4 rounded-md ${testResult.success ? 'bg-green-100' : 'bg-red-100'}`}>
+                <div className="flex items-center justify-between">
+                  <div className={`mr-3 flex items-center justify-center ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                    {testResult.success ? '✓' : '✗'}
+                  </div>
+                  <div className={`flex-1 ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                    {testResult.message}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
         </div>
       )}
       
       {/* New Server Modal */}
-      {showNewServerModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>保存当前服务器配置</h3>
-            <div className="form-group">
-              <label>服务器名称</label>
-              <Input
-                type="text"
-                value={newServerName}
-                onChange={(e) => setNewServerName(e.target.value)}
-                placeholder="输入服务器名称"
-              />
+            <Modal show={showNewServerModal} onClose={() => setShowNewServerModal(false)}>
+        <div className="p-4 border-b">
+          <h3 className="text-xl font-semibold">保存当前服务器配置</h3>
+        </div>
+        <div className="p-4">
+          <div className="mb-4">
+            <div className="block mb-2">
+              <Label htmlFor="serverName">服务器名称</Label>
             </div>
-            <div className="modal-buttons flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowNewServerModal(false)}>取消</Button>
-              <Button onClick={addNewServer} disabled={!newServerName.trim()}>保存</Button>
-            </div>
+            <Input
+              id="serverName"
+              type="text"
+              value={newServerName}
+              onChange={(e) => setNewServerName(e.target.value)}
+              placeholder="输入服务器名称"
+            />
           </div>
         </div>
-      )}
+        <div className="p-4 border-t">
+          <div className="flex gap-2 justify-end w-full">
+            <Button color="light" onClick={() => setShowNewServerModal(false)}>取消</Button>
+            <Button color="blue" onClick={addNewServer} disabled={!newServerName.trim()}>保存</Button>
+          </div>
+        </div>
+      </Modal>
       
       {/* URL Modal */}
-      {showUrlModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>从 URL 添加服务器</h3>
-            <div className="form-group">
-              <label>PostgreSQL URL</label>
-              <Input
-                type="text"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                placeholder="postgresql://username:password@host:port/database"
-              />
+            <Modal show={showUrlModal} onClose={() => setShowUrlModal(false)}>
+        <div className="p-4 border-b">
+          <h3 className="text-xl font-semibold">从 URL 添加服务器</h3>
+        </div>
+        <div className="p-4">
+          <div className="mb-4">
+            <div className="block mb-2">
+              <Label htmlFor="serverUrl">PostgreSQL URL</Label>
             </div>
-            <div className="modal-buttons flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowUrlModal(false)}>取消</Button>
-              <Button onClick={addServerFromUrl} disabled={!serverUrl.trim()}>添加</Button>
-            </div>
+            <Input
+              id="serverUrl"
+              type="text"
+              value={serverUrl}
+              onChange={(e) => setServerUrl(e.target.value)}
+              placeholder="postgresql://username:password@host:port/database"
+            />
           </div>
         </div>
-      )}
+        <div className="p-4 border-t">
+          <div className="flex gap-2 justify-end w-full">
+            <Button color="light" onClick={() => setShowUrlModal(false)}>取消</Button>
+            <Button color="blue" onClick={addServerFromUrl} disabled={!serverUrl.trim()}>添加</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -1,5 +1,4 @@
 import DatabaseConnection from "./components/DatabaseConnection";
-import "./App.css";
 
 function App() {
   return (

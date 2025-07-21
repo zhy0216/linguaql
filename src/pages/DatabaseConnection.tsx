@@ -430,7 +430,7 @@ const DatabaseConnection: React.FC = () => {
               />
             </div>
 
-            <div className="flex space-x-2 mt-6">
+            <div className="flex space-x-2 mt-3">
               <Button
                 color="light"
                 onClick={testConnection}

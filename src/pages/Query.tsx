@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'flowbite-react';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface QuerySession {
   id: string;
@@ -74,7 +75,12 @@ const Query: React.FC = () => {
   // Fetch database tables
   const fetchDatabaseTables = async () => {
     try {
-      const tables = await invoke<DatabaseTable[]>('get_database_tables');
+      // Get the current window's label (ID)
+      const currentWindow = getCurrentWindow();
+      const windowId = currentWindow.label;
+      
+      // Pass the window ID to the backend command
+      const tables = await invoke<DatabaseTable[]>('get_database_tables', { windowId: windowId });
       setDatabaseTables(tables);
     } catch (error) {
       console.error('Failed to fetch database tables:', error);
@@ -89,8 +95,18 @@ const Query: React.FC = () => {
     setQueryResult(null);
     
     try {
-      const result = await invoke<QueryResult>('execute_query', { query: queryInput });
-      setQueryResult(result);
+      // Get the current window's label (ID)
+      const currentWindow = getCurrentWindow();
+      const windowId = currentWindow.label;
+      
+      const result = await invoke<string>('execute_query', { windowId: windowId, query: queryInput });
+      
+      // Parse the JSON string result
+      const parsedResult = JSON.parse(result);
+      const columns = parsedResult.length > 0 ? Object.keys(parsedResult[0]) : [];
+      const rows = parsedResult.map((row: any) => columns.map(col => row[col]));
+      
+      setQueryResult({ columns, rows });
       
       // Add to history
       setQueryHistory(prev => [queryInput, ...prev].slice(0, 20)); // Keep last 20 queries

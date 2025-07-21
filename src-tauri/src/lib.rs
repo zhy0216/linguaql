@@ -2,6 +2,7 @@ mod database;
 
 use database::{DatabaseConfig, ConnectionResult};
 use tauri::AppHandle;
+use serde::Serialize;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -56,6 +57,48 @@ async fn execute_query(window_id: &str, query: &str) -> Result<String, String> {
     }
 }
 
+#[derive(Debug, Serialize)]
+pub struct DatabaseTable {
+    name: String,
+    schema: String,
+}
+
+#[tauri::command]
+async fn get_database_tables(windowId: &str) -> Result<Vec<DatabaseTable>, String> {
+    // 根据窗口ID获取数据库连接
+    if let Some(client) = database::get_connection(windowId) {
+        // 查询PostgreSQL系统表获取用户表
+        let query = "
+            SELECT 
+                table_schema, 
+                table_name 
+            FROM 
+                information_schema.tables 
+            WHERE 
+                table_schema NOT IN ('pg_catalog', 'information_schema') 
+                AND table_type = 'BASE TABLE' 
+            ORDER BY 
+                table_schema, 
+                table_name
+        ";
+        
+        match client.query(query, &[]).await {
+            Ok(rows) => {
+                let mut tables = Vec::new();
+                for row in rows {
+                    let schema: String = row.get(0);
+                    let name: String = row.get(1);
+                    tables.push(DatabaseTable { schema, name });
+                }
+                Ok(tables)
+            },
+            Err(e) => Err(format!("获取数据库表失败: {}", e))
+        }
+    } else {
+        Err(format!("找不到窗口ID对应的数据库连接: {}", windowId))
+    }
+}
+
 #[tauri::command]
 async fn connect_to_database(app_handle: AppHandle, config: DatabaseConfig) -> ConnectionResult {
     // 生成唯一的窗口ID，使用时间戳作为后缀
@@ -92,7 +135,8 @@ pub fn run() {
             greet,
             test_database_connection,
             connect_to_database,
-            execute_query
+            execute_query,
+            get_database_tables
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

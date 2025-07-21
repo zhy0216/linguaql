@@ -1,29 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from 'flowbite-react';
-import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import dbService, { DatabaseTable, TableDataRequest, QueryResult } from '../services/DBService';
 
 interface QuerySession {
   id: string;
   name: string;
   createdAt: string;
-}
-
-interface DatabaseTable {
-  name: string;
-  schema: string;
-}
-
-interface TableDataRequest {
-  schema: string;
-  name: string;
-  page: number;
-  page_size: number;
-}
-
-interface QueryResult {
-  columns: string[];
-  rows: any[][];
 }
 
 interface Pagination {
@@ -101,8 +84,8 @@ const Query: React.FC = () => {
       const currentWindow = getCurrentWindow();
       const windowId = currentWindow.label;
       
-      // Pass the window ID to the backend command
-      const tables = await invoke<DatabaseTable[]>('get_database_tables', { windowId: windowId });
+      // Use DBService to get database tables
+      const tables = await dbService.getDatabaseTables(windowId);
       setDatabaseTables(tables);
     } catch (error) {
       console.error('Failed to fetch database tables:', error);
@@ -127,23 +110,17 @@ const Query: React.FC = () => {
         schema: table.schema,
         name: table.name,
         page: page,
-        page_size: pageSize
+        pageSize: pageSize
       };
       
-      // Fetch table data with pagination
-      const result = await invoke<string>('get_table_data', { 
-        windowId: windowId,
-        request: request
-      });
-      
-      // Parse the JSON string result
-      const parsedData = JSON.parse(result);
+      // Use DBService to get table data
+      const result = await dbService.getTableData(windowId, request);
       
       // Extract column names from the first row
-      const columns = parsedData.length > 0 ? Object.keys(parsedData[0]) : [];
+      const columns = result.length > 0 ? Object.keys(result[0]) : [];
       
       // Convert rows to array format expected by QueryResult
-      const rows = parsedData.map((row: any) => columns.map(col => row[col]));
+      const rows = result.map((row: any) => columns.map(col => row[col]));
       
       setTableData({
         columns,
@@ -175,14 +152,12 @@ const Query: React.FC = () => {
       const currentWindow = getCurrentWindow();
       const windowId = currentWindow.label;
       
-      const result = await invoke<string>('execute_query', { windowId: windowId, query: queryInput });
+      const result = await dbService.executeQuery(windowId, queryInput);
       
-      // Parse the JSON string result
-      const parsedResult = JSON.parse(result);
-      const columns = parsedResult.length > 0 ? Object.keys(parsedResult[0]) : [];
-      const rows = parsedResult.map((row: any) => columns.map(col => row[col]));
-      
-      setQueryResult({ columns, rows });
+      setQueryResult({
+        columns: result.columns,
+        rows: result.rows,
+      });
       
       // Add to history
       setQueryHistory(prev => [queryInput, ...prev].slice(0, 20)); // Keep last 20 queries
@@ -199,12 +174,9 @@ const Query: React.FC = () => {
   
   // Cancel query execution
   const cancelQuery = async () => {
-    try {
-      await invoke('cancel_query');
-      setIsExecuting(false);
-    } catch (error) {
-      console.error('Failed to cancel query:', error);
-    }
+    // For now, just set executing to false
+    // In a real implementation, we might need to implement query cancellation
+    setIsExecuting(false);
   };
   
   // Select a query from history

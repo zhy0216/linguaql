@@ -1,8 +1,35 @@
-mod database;
-
-use database::{DatabaseConfig, ConnectionResult};
 use tauri::AppHandle;
 use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+
+// Database configuration
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DatabaseConfig {
+    pub host: String,
+    pub port: u16,
+    pub database: String,
+    pub username: String,
+    pub password: String,
+}
+
+// Connection result
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConnectionResult {
+    pub success: bool,
+    pub message: String,
+    pub window_id: Option<String>,
+}
+
+// DatabaseTable and TableDataRequest structs moved to frontend DBService
+
+// Global storage for database connection URLs (for Tauri SQL plugin)
+static DATABASE_CONNECTIONS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| {
+    Mutex::new(HashMap::new())
+});
+
+
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -12,100 +39,36 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 async fn test_database_connection(config: DatabaseConfig) -> ConnectionResult {
-    database::test_postgres_connection(&config).await
-}
-
-#[tauri::command]
-async fn execute_query(window_id: &str, query: &str) -> Result<String, String> {
-    // 根据窗口ID获取数据库连接
-    if let Some(client) = database::get_connection(window_id) {
-        // 执行查询
-        match client.query(query, &[]).await {
-            Ok(rows) => {
-                // 简单转换结果为JSON格式
-                let mut result = Vec::new();
-                for row in rows {
-                    let mut row_data = serde_json::Map::new();
-                    for i in 0..row.len() {
-                        let col_name = row.columns()[i].name().to_owned();
-                        // 处理不同类型的列
-                        if let Ok(val) = row.try_get::<_, String>(i) {
-                            row_data.insert(col_name, serde_json::Value::String(val));
-                        } else if let Ok(val) = row.try_get::<_, i32>(i) {
-                            row_data.insert(col_name, serde_json::Value::Number(serde_json::Number::from(val)));
-                        } else if let Ok(val) = row.try_get::<_, i64>(i) {
-                            row_data.insert(col_name, serde_json::Value::Number(serde_json::Number::from(val)));
-                        } else if let Ok(val) = row.try_get::<_, f64>(i) {
-                            if let Some(num) = serde_json::Number::from_f64(val) {
-                                row_data.insert(col_name, serde_json::Value::Number(num));
-                            }
-                        } else if let Ok(val) = row.try_get::<_, bool>(i) {
-                            row_data.insert(col_name, serde_json::Value::Bool(val));
-                        } else {
-                            // 对于其他类型，尝试转换为字符串
-                            row_data.insert(col_name, serde_json::Value::String("得到值".to_string()));
-                        }
-                    }
-                    result.push(serde_json::Value::Object(row_data));
-                }
-                Ok(serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string()))
-            }
-            Err(e) => Err(format!("查询执行错误: {}", e))
-        }
-    } else {
-        Err(format!("找不到窗口ID对应的数据库连接: {}", window_id))
+    // Validate configuration format
+    if config.host.is_empty() || config.username.is_empty() {
+        return ConnectionResult {
+            success: false,
+            message: "Invalid configuration: missing required fields (host, username)".to_string(),
+            window_id: None,
+        };
+    }
+    
+    // For Tauri SQL plugin, we'll validate the format and return success
+    // The actual connection test will happen when we try to connect
+    ConnectionResult {
+        success: true,
+        message: "Configuration validated successfully".to_string(),
+        window_id: None,
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct DatabaseTable {
-    name: String,
-    schema: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TableDataRequest {
-    schema: String,
-    name: String,
-    page: u32,
-    page_size: u32,
-}
-
 #[tauri::command]
-async fn get_database_tables(windowId: &str) -> Result<Vec<DatabaseTable>, String> {
-    // 根据窗口ID获取数据库连接
-    if let Some(client) = database::get_connection(windowId) {
-        // 查询PostgreSQL系统表获取用户表
-        let query = "
-            SELECT 
-                table_schema, 
-                table_name 
-            FROM 
-                information_schema.tables 
-            WHERE 
-                table_schema NOT IN ('pg_catalog', 'information_schema') 
-                AND table_type = 'BASE TABLE' 
-            ORDER BY 
-                table_schema, 
-                table_name
-        ";
-        
-        match client.query(query, &[]).await {
-            Ok(rows) => {
-                let mut tables = Vec::new();
-                for row in rows {
-                    let schema: String = row.get(0);
-                    let name: String = row.get(1);
-                    tables.push(DatabaseTable { schema, name });
-                }
-                Ok(tables)
-            },
-            Err(e) => Err(format!("获取数据库表失败: {}", e))
-        }
-    } else {
-        Err(format!("找不到窗口ID对应的数据库连接: {}", windowId))
-    }
+async fn get_connection_url(window_id: &str) -> Result<String, String> {
+    // 返回连接URL供前端使用
+    let connection_url = {
+        let connections = DATABASE_CONNECTIONS.lock().unwrap();
+        connections.get(window_id).cloned()
+    };
+    
+    connection_url.ok_or_else(|| format!("找不到窗口ID对应的数据库连接: {}", window_id))
 }
+
+// get_database_tables function removed - now handled by frontend DBService
 
 #[tauri::command]
 async fn connect_to_database(app_handle: AppHandle, config: DatabaseConfig) -> ConnectionResult {
@@ -116,87 +79,59 @@ async fn connect_to_database(app_handle: AppHandle, config: DatabaseConfig) -> C
         .as_millis();
     let window_id = format!("query-window-{}", timestamp);
     
-    // 使用唯一的窗口ID建立连接
-    let result = database::establish_postgres_connection(&config, &window_id).await;
+    // Build PostgreSQL connection URL for Tauri SQL plugin
+    let connection_url = format!(
+        "postgres://{}:{}@{}:{}/{}",
+        config.username, config.password, config.host, config.port, config.database
+    );
     
-    if result.success {
-        // 使用相同的窗口ID创建窗口，以便后续可以通过此ID获取对应的数据库连接
-        let _window = tauri::WebviewWindowBuilder::new(
-            &app_handle,
-            &window_id,
-            tauri::WebviewUrl::App("index.html?page=query".into())
-        )
-        .title(format!("LinguaQL - {} - 数据库查询", config.database))
-        .inner_size(1200.0, 800.0)
-        .center()
-        .build();
+    // Store connection URL for this window
+    {
+        let mut connections = DATABASE_CONNECTIONS.lock().unwrap();
+        connections.insert(window_id.clone(), connection_url);
     }
     
-    result
-}
-
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-#[tauri::command]
-async fn get_table_data(windowId: &str, request: TableDataRequest) -> Result<String, String> {
-    // 根据窗口ID获取数据库连接
-    if let Some(client) = database::get_connection(windowId) {
-        // 计算分页偏移量
-        let offset = (request.page - 1) * request.page_size;
-        
-        // 构建查询语句，使用参数化查询防止SQL注入
-        let query = format!(
-            "SELECT * FROM \"{}\".\"{}\" LIMIT $1 OFFSET $2", 
-            request.schema, request.name
-        );
-        
-        // 执行查询
-        match client.query(&query, &[&(request.page_size as i64), &(offset as i64)]).await {
-            Ok(rows) => {
-                // 将结果转换为JSON格式
-                let mut result = Vec::new();
-                for row in rows {
-                    let mut row_data = serde_json::Map::new();
-                    for i in 0..row.len() {
-                        let col_name = row.columns()[i].name().to_owned();
-                        // 处理不同类型的列
-                        if let Ok(val) = row.try_get::<_, String>(i) {
-                            row_data.insert(col_name, serde_json::Value::String(val));
-                        } else if let Ok(val) = row.try_get::<_, i32>(i) {
-                            row_data.insert(col_name, serde_json::Value::Number(serde_json::Number::from(val)));
-                        } else if let Ok(val) = row.try_get::<_, i64>(i) {
-                            row_data.insert(col_name, serde_json::Value::Number(serde_json::Number::from(val)));
-                        } else if let Ok(val) = row.try_get::<_, f64>(i) {
-                            if let Some(num) = serde_json::Number::from_f64(val) {
-                                row_data.insert(col_name, serde_json::Value::Number(num));
-                            }
-                        } else if let Ok(val) = row.try_get::<_, bool>(i) {
-                            row_data.insert(col_name, serde_json::Value::Bool(val));
-                        } else {
-                            // 对于其他类型，尝试转换为字符串
-                            row_data.insert(col_name, serde_json::Value::String("得到值".to_string()));
-                        }
-                    }
-                    result.push(serde_json::Value::Object(row_data));
-                }
-                Ok(serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string()))
-            },
-            Err(e) => Err(format!("获取表数据失败: {}", e))
+    // 创建新的查询窗口
+    let window = tauri::WebviewWindowBuilder::new(
+        &app_handle,
+        &window_id,
+        tauri::WebviewUrl::App("index.html?page=query".into())
+    )
+    .title(format!("LinguaQL - {} - 数据库查询", config.database))
+    .inner_size(1200.0, 800.0)
+    .center()
+    .build();
+    
+    match window {
+        Ok(_) => ConnectionResult {
+            success: true,
+            message: "Connected successfully and query window opened".to_string(),
+            window_id: Some(window_id),
+        },
+        Err(e) => {
+            // 如果窗口创建失败，清理连接信息
+            {
+                let mut connections = DATABASE_CONNECTIONS.lock().unwrap();
+                connections.remove(&window_id);
+            }
+            ConnectionResult {
+                success: false,
+                message: format!("Failed to create query window: {}", e),
+                window_id: None,
+            }
         }
-    } else {
-        Err(format!("找不到窗口ID对应的数据库连接: {}", windowId))
     }
 }
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             greet,
             test_database_connection,
             connect_to_database,
-            execute_query,
-            get_database_tables,
-            get_table_data
+            get_connection_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

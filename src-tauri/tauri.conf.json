@@ -21,6 +21,11 @@
       "csp": null
     }
   },
+  "plugins": {
+    "sql": {
+      "preload": []
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

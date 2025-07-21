@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { Button, TextInput as Input, Label, Badge, Modal } from 'flowbite-react';
-import { useServerConfigStore } from '../stores/serverConfigStore';
-import { DatabaseConfig, ConnectionResult, ServerConfig } from '../types/database';
-import dbService from '../services/DBService';
+import { useServerConfigStore } from '../../stores/serverConfigStore';
+import { DatabaseConfig, ConnectionResult, ServerConfig } from '../../types/database';
+import dbService from '../../services/DBService';
 
+interface Props {
+  onDatabaseConnected: () => void;
+}
 
-const DatabaseConnection: React.FC = () => {
+const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected }) => {
   // Zustand store
   const {
     servers,
@@ -92,6 +96,9 @@ const DatabaseConnection: React.FC = () => {
     try {
       const result = await dbService.testDatabaseConnection(config);
       setTestResult(result);
+      saveCurrentServer();
+      await getCurrentWindow().setSize(new LogicalSize(1200, 600));
+      onDatabaseConnected();
     } catch (error) {
       setTestResult({
         success: false,
@@ -230,7 +237,7 @@ const DatabaseConnection: React.FC = () => {
           </Button>
         </div>
 
-        <div className="mb-4">
+        <div className="max-h-52 overflow-y-auto">
           <h4 className="text-sm font-medium text-gray-500 mb-2">服务器列表</h4>
           {servers.length === 0 ? (
             <div className="text-sm text-gray-500">暂无服务器</div>
@@ -244,7 +251,7 @@ const DatabaseConnection: React.FC = () => {
                 >
                   <div className="flex justify-between items-center">
                     <div className="overflow-hidden">
-                      <div className="flex items-center">
+                      <div className="flex h-6">
                         <span className="font-medium text-sm truncate">{server.name}</span>
                         {selectedServerId === server.id && isDirty && (
                           <span className="text-red-500 ml-1">*</span>
@@ -273,7 +280,7 @@ const DatabaseConnection: React.FC = () => {
         </div>
 
         <div className="mt-4 pt-4 border-t border-indigo-100">
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex gap-2 w-full">
             <Button
               color="light"
               size="sm"
@@ -297,9 +304,9 @@ const DatabaseConnection: React.FC = () => {
       </div>
 
       {selectedServerId && (
-        <div className="flex-1 p-6 flex flex-col">
+        <div className="flex-1 p-6 pt-2 flex flex-col">
           <div className="max-w-3xl mx-auto flex flex-col w-full">
-            <h2 className="text-2xl font-bold mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold mb-2 flex items-center justify-between">
               PostgreSQL 数据库连接
               {isDirty && (
                 <Badge color="warning" className="ml-2">

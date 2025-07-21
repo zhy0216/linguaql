@@ -76,8 +76,7 @@ export const useServerConfigStore = create<ServerConfigState>()(
       name: 'server-config-storage', // unique name for localStorage
       partialize: (state) => ({
         servers: state.servers,
-        selectedServerId: state.selectedServerId,
-      }), // only persist servers and selectedServerId, not currentConfig
+      }), // only persist servers
     }
   )
 );

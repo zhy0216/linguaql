@@ -1,5 +1,4 @@
 import Database from '@tauri-apps/plugin-sql';
-import { invoke } from '@tauri-apps/api/core';
 import { DatabaseConfig, ConnectionResult } from '../types/database';
 
 export interface DatabaseTable {

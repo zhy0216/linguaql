@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import DatabaseConnection from './pages/DatabaseConnection';
+import DatabaseConnection from './pages/DatabaseConnection/DatabaseConnection';
 import Query from './pages/Query';
 
 function App() {
@@ -28,7 +28,7 @@ function App() {
   return (
     <div className="App">
       {currentPage === 'connection' ? (
-        <DatabaseConnection />
+        <DatabaseConnection onDatabaseConnected={() => setCurrentPage('query')}/>
       ) : (
         <Query />
       )}

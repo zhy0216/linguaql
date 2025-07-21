@@ -24,7 +24,9 @@ interface FilterConfig {
   value: string;
 }
 
-const Query: React.FC = () => {
+interface QueryProps {}
+
+const Query: React.FC<QueryProps> = () => {
   // State for managing query sessions
   const [querySessions, setQuerySessions] = useState<QuerySession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -292,9 +294,11 @@ const Query: React.FC = () => {
         <div className="p-3 border-b border-gray-200">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-semibold">Query Sessions</h3>
-            <Button size="xs" onClick={createNewSession}>
-              New
-            </Button>
+            <div className="flex gap-1">
+              <Button size="xs" onClick={createNewSession}>
+                New
+              </Button>
+            </div>
           </div>
           <div className="space-y-1 max-h-40 overflow-y-auto">
             {querySessions.map(session => (

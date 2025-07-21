@@ -7,9 +7,10 @@ import dbService from '../../services/DBService';
 
 interface Props {
   onDatabaseConnected: () => void;
+  onOpenSettings: () => void;
 }
 
-const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected }) => {
+const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettings }) => {
   // Zustand store
   const {
     servers,
@@ -220,8 +221,13 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected }) => {
   return (
     <div className="flex h-full w-full">
       <div className="w-64 border-r border-indigo-100 p-3 overflow-y-auto flex flex-col">
-        <div className="mb-4 flex items-center">
+        <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">服务器管理</h3>
+          {onOpenSettings && (
+            <Button size="xs" outline color="light" onClick={onOpenSettings} title="Settings">
+              ⚙️
+            </Button>
+          )}
         </div>
 
         <div className="mb-3 flex flex-col gap-1">
@@ -302,7 +308,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected }) => {
       {selectedServerId && (
         <div className="flex-1 p-6 pt-2 flex flex-col">
           <div className="max-w-3xl mx-auto flex flex-col w-full">
-            <h2 className="text-2xl font-bold mb-2 flex items-center justify-between">
+            <h2 className="text-2xl font-bold mb-4 flex items-center justify-between">
               PostgreSQL 数据库连接
               {isDirty && (
                 <Badge color="warning" className="ml-2">

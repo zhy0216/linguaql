@@ -73,7 +73,7 @@ async fn connect_to_database(app_handle: AppHandle, config: DatabaseConfig) -> C
         let _window = tauri::WebviewWindowBuilder::new(
             &app_handle,
             &window_id,
-            tauri::WebviewUrl::App("query.html".into())
+            tauri::WebviewUrl::App("index.html?page=query".into())
         )
         .title(format!("LinguaQL - {} - 数据库查询", config.database))
         .inner_size(1200.0, 800.0)

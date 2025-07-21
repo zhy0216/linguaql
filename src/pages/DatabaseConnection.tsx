@@ -26,7 +26,11 @@ interface ServerConfig {
   createdAt: string;
 }
 
-const DatabaseConnection: React.FC = () => {
+interface DatabaseConnectionProps {
+  onDatabaseConnected?: () => void;
+}
+
+const DatabaseConnection: React.FC<DatabaseConnectionProps> = ({ onDatabaseConnected }) => {
   const [config, setConfig] = useState<DatabaseConfig>({
     host: 'localhost',
     port: 5432,
@@ -117,6 +121,10 @@ const DatabaseConnection: React.FC = () => {
         // Auto-save on successful connection
         if (selectedServerId && isDirty) {
           saveCurrentServer();
+        }
+        // Notify parent component about successful connection
+        if (onDatabaseConnected) {
+          onDatabaseConnected();
         }
       }
     } catch (error) {

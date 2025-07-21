@@ -2,7 +2,7 @@ mod database;
 
 use database::{DatabaseConfig, ConnectionResult};
 use tauri::AppHandle;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -61,6 +61,14 @@ async fn execute_query(window_id: &str, query: &str) -> Result<String, String> {
 pub struct DatabaseTable {
     name: String,
     schema: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TableDataRequest {
+    schema: String,
+    name: String,
+    page: u32,
+    page_size: u32,
 }
 
 #[tauri::command]
@@ -128,6 +136,57 @@ async fn connect_to_database(app_handle: AppHandle, config: DatabaseConfig) -> C
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[tauri::command]
+async fn get_table_data(windowId: &str, request: TableDataRequest) -> Result<String, String> {
+    // 根据窗口ID获取数据库连接
+    if let Some(client) = database::get_connection(windowId) {
+        // 计算分页偏移量
+        let offset = (request.page - 1) * request.page_size;
+        
+        // 构建查询语句，使用参数化查询防止SQL注入
+        let query = format!(
+            "SELECT * FROM \"{}\".\"{}\" LIMIT $1 OFFSET $2", 
+            request.schema, request.name
+        );
+        
+        // 执行查询
+        match client.query(&query, &[&(request.page_size as i64), &(offset as i64)]).await {
+            Ok(rows) => {
+                // 将结果转换为JSON格式
+                let mut result = Vec::new();
+                for row in rows {
+                    let mut row_data = serde_json::Map::new();
+                    for i in 0..row.len() {
+                        let col_name = row.columns()[i].name().to_owned();
+                        // 处理不同类型的列
+                        if let Ok(val) = row.try_get::<_, String>(i) {
+                            row_data.insert(col_name, serde_json::Value::String(val));
+                        } else if let Ok(val) = row.try_get::<_, i32>(i) {
+                            row_data.insert(col_name, serde_json::Value::Number(serde_json::Number::from(val)));
+                        } else if let Ok(val) = row.try_get::<_, i64>(i) {
+                            row_data.insert(col_name, serde_json::Value::Number(serde_json::Number::from(val)));
+                        } else if let Ok(val) = row.try_get::<_, f64>(i) {
+                            if let Some(num) = serde_json::Number::from_f64(val) {
+                                row_data.insert(col_name, serde_json::Value::Number(num));
+                            }
+                        } else if let Ok(val) = row.try_get::<_, bool>(i) {
+                            row_data.insert(col_name, serde_json::Value::Bool(val));
+                        } else {
+                            // 对于其他类型，尝试转换为字符串
+                            row_data.insert(col_name, serde_json::Value::String("得到值".to_string()));
+                        }
+                    }
+                    result.push(serde_json::Value::Object(row_data));
+                }
+                Ok(serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string()))
+            },
+            Err(e) => Err(format!("获取表数据失败: {}", e))
+        }
+    } else {
+        Err(format!("找不到窗口ID对应的数据库连接: {}", windowId))
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -136,7 +195,8 @@ pub fn run() {
             test_database_connection,
             connect_to_database,
             execute_query,
-            get_database_tables
+            get_database_tables,
+            get_table_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

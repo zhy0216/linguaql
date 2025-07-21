@@ -14,9 +14,22 @@ interface DatabaseTable {
   schema: string;
 }
 
+interface TableDataRequest {
+  schema: string;
+  name: string;
+  page: number;
+  page_size: number;
+}
+
 interface QueryResult {
   columns: string[];
   rows: any[][];
+}
+
+interface Pagination {
+  page: number;
+  pageSize: number;
+  total?: number;
 }
 
 const Query: React.FC = () => {
@@ -26,6 +39,15 @@ const Query: React.FC = () => {
   
   // State for database tables
   const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([]);
+  const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
+  
+  // State for table data pagination
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    pageSize: 100
+  });
+  const [tableData, setTableData] = useState<QueryResult | null>(null);
+  const [isLoadingTableData, setIsLoadingTableData] = useState(false);
   
   // State for query input and results
   const [queryInput, setQueryInput] = useState('');
@@ -87,6 +109,60 @@ const Query: React.FC = () => {
     }
   };
   
+  // Load table data with pagination when a table is clicked
+  const loadTableData = async (table: DatabaseTable, page: number = 1, pageSize: number = 100) => {
+    if (!table) return;
+    
+    setSelectedTable(table);
+    setIsLoadingTableData(true);
+    setTableData(null); // Clear previous data
+    
+    try {
+      // Get the current window's label (ID)
+      const currentWindow = getCurrentWindow();
+      const windowId = currentWindow.label;
+      
+      // Create the request object
+      const request: TableDataRequest = {
+        schema: table.schema,
+        name: table.name,
+        page: page,
+        page_size: pageSize
+      };
+      
+      // Fetch table data with pagination
+      const result = await invoke<string>('get_table_data', { 
+        windowId: windowId,
+        request: request
+      });
+      
+      // Parse the JSON string result
+      const parsedData = JSON.parse(result);
+      
+      // Extract column names from the first row
+      const columns = parsedData.length > 0 ? Object.keys(parsedData[0]) : [];
+      
+      // Convert rows to array format expected by QueryResult
+      const rows = parsedData.map((row: any) => columns.map(col => row[col]));
+      
+      setTableData({
+        columns,
+        rows
+      });
+      
+      setPagination({
+        page,
+        pageSize,
+        // We don't have total count in this implementation yet
+      });
+    } catch (error) {
+      console.error('Failed to load table data:', error);
+      setTableData(null);
+    } finally {
+      setIsLoadingTableData(false);
+    }
+  };
+  
   // Execute query
   const executeQuery = async () => {
     if (!queryInput.trim()) return;
@@ -139,8 +215,8 @@ const Query: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full">
-      {/* Left Sidebar */}
-      <div className="w-64 border-r border-gray-200 flex flex-col h-full">
+      {/* Left Sidebar - Fixed Width */}
+      <div className="w-80 min-w-80 max-w-80 border-r border-gray-200 flex flex-col h-full bg-gray-50">
         {/* Query Sessions */}
         <div className="p-3 border-b border-gray-200">
           <div className="flex justify-between items-center mb-2">
@@ -169,7 +245,11 @@ const Query: React.FC = () => {
           ) : (
             <div className="space-y-1">
               {databaseTables.map((table, index) => (
-                <div key={index} className="p-1.5 text-xs hover:bg-gray-100 cursor-pointer rounded">
+                <div 
+                  key={index} 
+                  className={`p-1.5 text-xs hover:bg-gray-100 cursor-pointer rounded ${selectedTable && selectedTable.name === table.name && selectedTable.schema === table.schema ? 'bg-blue-100' : ''}`}
+                  onClick={() => loadTableData(table)}
+                >
                   <span className="text-gray-500">{table.schema}.</span>
                   <span>{table.name}</span>
                 </div>
@@ -179,10 +259,11 @@ const Query: React.FC = () => {
         </div>
       </div>
       
-      {/* Right Content Area */}
+      {/* Right Content Area - With Max Width */}
       <div className="flex-1 flex flex-col h-full">
-        {/* Query Input */}
-        <div className="p-3 border-b border-gray-200">
+        <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+          {/* Query Input */}
+          <div className="p-3 border-b border-gray-200">
           <textarea
             id="query-input"
             placeholder="Enter your SQL query here..."
@@ -243,45 +324,108 @@ const Query: React.FC = () => {
           </div>
         </div>
         
-        {/* Results Table */}
-        <div className="flex-grow p-3 overflow-auto">
-          {isExecuting ? (
-            <div className="flex items-center justify-center h-full">
+        {/* Query Results */}
+        <div className="flex-1 p-3 overflow-auto max-w-4xl">
+          {/* Show table data when a table is selected */}
+          {tableData && selectedTable ? (
+            <div className="max-w-4xl">
+              <h3 className="text-sm font-semibold mb-2">
+                {selectedTable.schema}.{selectedTable.name}
+                {isLoadingTableData && <span className="ml-2 text-xs text-gray-500">(Loading...)</span>}
+              </h3>
+              
+              {tableData.rows.length === 0 ? (
+                <div className="text-sm text-gray-500">Table has no data</div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left text-gray-700">
+                      <thead className="text-xs text-gray-700 bg-gray-50">
+                        <tr>
+                          {tableData.columns.map((column, index) => (
+                            <th key={index} className="px-4 py-2">{column}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableData.rows.map((row, rowIndex) => (
+                          <tr key={rowIndex} className="border-b hover:bg-gray-50">
+                            {row.map((cell, cellIndex) => (
+                              <td key={cellIndex} className="px-4 py-2">{cell === null ? 'NULL' : String(cell)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  <div className="flex justify-between items-center mt-4 text-xs">
+                    <div>
+                      Showing {tableData.rows.length} rows
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        size="xs" 
+                        disabled={pagination.page === 1 || isLoadingTableData}
+                        onClick={() => loadTableData(selectedTable, pagination.page - 1, pagination.pageSize)}
+                      >
+                        Previous
+                      </Button>
+                      <span>Page {pagination.page}</span>
+                      <Button 
+                        size="xs" 
+                        disabled={tableData.rows.length < pagination.pageSize || isLoadingTableData}
+                        onClick={() => loadTableData(selectedTable, pagination.page + 1, pagination.pageSize)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : isExecuting ? (
+            <div className="flex justify-center items-center h-full">
               <div className="text-center">
-                <div className="text-gray-500">Executing query...</div>
+                <div className="spinner mb-2"></div>
+                <div className="text-sm text-gray-500">Executing query...</div>
               </div>
             </div>
           ) : queryResult ? (
-            <div className="overflow-x-auto relative">
-              <table className="w-full text-sm text-left text-gray-500">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                  <tr>
-                    {queryResult.columns.map((col, idx) => (
-                      <th key={idx} scope="col" className="py-3 px-6">{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {queryResult.rows.map((row, rowIdx) => (
-                    <tr key={rowIdx} className="bg-white border-b hover:bg-gray-50">
-                      {row.map((cell, cellIdx) => (
-                        <td key={cellIdx} className="py-4 px-6">
-                          {cell === null ? <span className="text-gray-400">null</span> : String(cell)}
-                        </td>
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Query Results</h3>
+              {queryResult.rows.length === 0 ? (
+                <div className="text-sm text-gray-500">No results found</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left text-gray-700">
+                    <thead className="text-xs text-gray-700 bg-gray-50">
+                      <tr>
+                        {queryResult.columns.map((column, index) => (
+                          <th key={index} className="px-4 py-2">{column}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {queryResult.rows.map((row, rowIndex) => (
+                        <tr key={rowIndex} className="border-b hover:bg-gray-50">
+                          {row.map((cell, cellIndex) => (
+                            <td key={cellIndex} className="px-4 py-2">{cell === null ? 'NULL' : String(cell)}</td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="text-gray-500">No results to display</div>
-                <p className="text-sm text-gray-400">Execute a query to see results</p>
-              </div>
+            <div className="text-sm text-gray-500">
+              Enter a query and click Run to see results, or click on a table to view its data
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

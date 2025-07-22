@@ -10,13 +10,15 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
-    "loading": "Loading...",
+    "loading": "Loading",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
     "info": "Information",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "page": "Page",
+    "null": "NULL"
   },
   "database": {
     "connection": "Database Connection",
@@ -85,7 +87,29 @@
     "enterQuery": "Enter your SQL query here...",
     "history": "History",
     "run": "Run",
-    "naturalLanguage": "Natural Language"
+    "naturalLanguage": "Natural Language",
+    "querySession": "Query",
+    "noQueryHistory": "No query history",
+    "execute": "Execute",
+    "clearAll": "Clear All",
+    "noFiltersApplied": "No filters applied",
+    "selectColumn": "Select column",
+    "filterValue": "Filter value",
+    "filter": "filter",
+    "applied": "applied",
+    "noDataMatchesFilters": "No data matches the filters",
+    "tableHasNoData": "Table has no data",
+    "showingRows": "Showing {{count}} rows",
+    "filteredFromTotal": "filtered from {{total}} total",
+    "executingQuery": "Executing query",
+    "queryResults": "Query Results",
+    "sortedBy": "Sorted by",
+    "noResultsMatchFilters": "No results match the filters",
+    "noResultsFound": "No results found",
+    "enterQueryInstructions": "Enter a query and click Run to see results, or click on a table to view its data",
+    "confirmSQLExecution": "Confirm SQL Execution",
+    "aiGeneratedSQLWarning": "The AI generated the following SQL query. This query contains potentially unsafe operations that require your confirmation before execution.",
+    "executeAnyway": "Execute Anyway"
   },
   "settings": {
     "settings": "Settings",
@@ -104,7 +128,8 @@
     "chinese": "中文",
     "openRouterInfo": "OpenRouter provides access to multiple AI models through a single API. You can use your OpenRouter API key here, or configure a different OpenAI-compatible endpoint.",
     "showApiKey": "Show API Key",
-    "hideApiKey": "Hide API Key"
+    "hideApiKey": "Hide API Key",
+    "configurePreferences": "Configure your application preferences"
   },
   "ai": {
     "convertToSql": "Convert to SQL",

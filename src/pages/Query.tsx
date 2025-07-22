@@ -183,7 +183,7 @@ const Query: React.FC<QueryProps> = () => {
   const createNewSession = () => {
     const newSession: QuerySession = {
       id: Date.now().toString(),
-      name: `Query ${querySessions.length + 1}`,
+      name: `${t('query.querySession')} ${querySessions.length + 1}`,
       createdAt: new Date().toISOString(),
     };
 
@@ -694,7 +694,7 @@ const Query: React.FC<QueryProps> = () => {
             <div className="flex gap-2">
               <div className="relative">
                 <Button size="xs" onClick={() => setShowHistory(!showHistory)}>
-                  History
+                  {t('query.history')}
                 </Button>
               </div>
             </div>
@@ -704,7 +704,7 @@ const Query: React.FC<QueryProps> = () => {
                   <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-lg rounded-lg z-10 border border-gray-200">
                     <div className="p-1 max-h-60 overflow-y-auto">
                       {queryHistory.length === 0 ? (
-                        <div className="p-2 text-sm text-gray-500">No query history</div>
+                        <div className="p-2 text-sm text-gray-500">{t('query.noQueryHistory')}</div>
                       ) : (
                         queryHistory.map((query, idx) => (
                           <div
@@ -724,7 +724,7 @@ const Query: React.FC<QueryProps> = () => {
 
             <div className="flex gap-2">
               <Button size="xs" color="failure" onClick={cancelQuery} disabled={!isExecuting}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 size="xs"
@@ -732,7 +732,7 @@ const Query: React.FC<QueryProps> = () => {
                 onClick={executeQuery}
                 disabled={isExecuting || !queryInput.trim()}
               >
-                Execute
+                {t('query.execute')}
               </Button>
             </div>
           </div>
@@ -741,19 +741,19 @@ const Query: React.FC<QueryProps> = () => {
           {(tableData || queryResult) && (
             <div className="p-2 border-b border-gray-200 bg-gray-100">
               <div className="flex gap-2 items-center mb-2">
-                <span className="text-xs font-medium">Filters:</span>
+                <span className="text-xs font-medium">{t('query.filters')}:</span>
                 <Button size="xs" color="light" onClick={addFilter} outline>
-                  Add Filter
+                  {t('query.addFilter')}
                 </Button>
                 {filterConfigs.length > 0 && (
                   <Button size="xs" color="gray" onClick={clearAllFilters}>
-                    Clear All
+                    {t('query.clearAll')}
                   </Button>
                 )}
               </div>
 
               {filterConfigs.length === 0 ? (
-                <div className="text-xs text-gray-500">No filters applied</div>
+                <div className="text-xs text-gray-500">{t('query.noFiltersApplied')}</div>
               ) : (
                 <div className="space-y-2">
                   {filterConfigs.map((filter, index) => (
@@ -763,7 +763,7 @@ const Query: React.FC<QueryProps> = () => {
                         value={filter.column}
                         onChange={e => updateFilter(index, { column: e.target.value })}
                       >
-                        <option value="">Select column</option>
+                        <option value="">{t('query.selectColumn')}</option>
                         {(filteredAndSortedData || tableData || queryResult)?.columns.map(
                           (column, colIndex) => (
                             <option key={colIndex} value={column}>
@@ -774,14 +774,14 @@ const Query: React.FC<QueryProps> = () => {
                       </Select>
                       <input
                         type="text"
-                        placeholder="Filter value"
+                        placeholder={t('query.filterValue')}
                         className="text-xs border border-gray-300 rounded px-2 py-1 flex-1 max-w-xs"
                         value={filter.value}
                         onChange={e => updateFilter(index, { value: e.target.value })}
                         disabled={!filter.column}
                       />
                       <Button size="xs" color="failure" onClick={() => removeFilter(index)}>
-                        Remove
+                        {t('common.remove')}
                       </Button>
                     </div>
                   ))}
@@ -798,7 +798,7 @@ const Query: React.FC<QueryProps> = () => {
                 <h3 className="text-sm font-semibold mb-2">
                   {selectedTable.schema}.{selectedTable.name}
                   {isLoadingTableData && (
-                    <span className="ml-2 text-xs text-gray-500">(Loading...)</span>
+                    <span className="ml-2 text-xs text-gray-500">({t('common.loading')}...)</span>
                   )}
                   {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
                     <span className="ml-2 text-xs text-blue-600">
@@ -812,8 +812,8 @@ const Query: React.FC<QueryProps> = () => {
                 {filteredAndSortedData.rows.length === 0 ? (
                   <div className="text-sm text-gray-500">
                     {filterConfigs.some(f => f.column && f.value)
-                      ? 'No data matches the filters'
-                      : 'Table has no data'}
+                      ? t('query.noDataMatchesFilters')
+                      : t('query.tableHasNoData')}
                   </div>
                 ) : (
                   <>
@@ -846,7 +846,7 @@ const Query: React.FC<QueryProps> = () => {
                             <tr key={rowIndex} className="border-b hover:bg-gray-50">
                               {row.map((cell, cellIndex) => (
                                 <td key={cellIndex} className="px-4 py-2">
-                                  {cell === null ? 'NULL' : String(cell)}
+                                  {cell === null ? t('common.null') : String(cell)}
                                 </td>
                               ))}
                             </tr>
@@ -858,10 +858,10 @@ const Query: React.FC<QueryProps> = () => {
                     {/* Pagination Controls */}
                     <div className="flex justify-between items-center mt-4 text-xs">
                       <div>
-                        Showing {filteredAndSortedData.rows.length} rows
+                        {t('query.showingRows', { count: filteredAndSortedData.rows.length })}
                         {filterConfigs.some(f => f.column && f.value) && tableData && (
                           <span className="ml-2 text-gray-500">
-                            (filtered from {tableData.rows.length} total)
+                            ({t('query.filteredFromTotal', { total: tableData.rows.length })})
                           </span>
                         )}
                       </div>
@@ -873,9 +873,11 @@ const Query: React.FC<QueryProps> = () => {
                             loadTableData(selectedTable, pagination.page - 1, pagination.pageSize)
                           }
                         >
-                          Previous
+                          {t('common.previous')}
                         </Button>
-                        <span>Page {pagination.page}</span>
+                        <span>
+                          {t('common.page')} {pagination.page}
+                        </span>
                         <Button
                           size="xs"
                           disabled={
@@ -886,7 +888,7 @@ const Query: React.FC<QueryProps> = () => {
                             loadTableData(selectedTable, pagination.page + 1, pagination.pageSize)
                           }
                         >
-                          Next
+                          {t('common.next')}
                         </Button>
                       </div>
                     </div>
@@ -897,13 +899,13 @@ const Query: React.FC<QueryProps> = () => {
               <div className="flex justify-center items-center h-full">
                 <div className="text-center">
                   <div className="spinner mb-2"></div>
-                  <div className="text-sm text-gray-500">Executing query...</div>
+                  <div className="text-sm text-gray-500">{t('query.executingQuery')}...</div>
                 </div>
               </div>
             ) : queryResult ? (
               <div>
                 <h3 className="text-sm font-semibold mb-2">
-                  Query Results
+                  {t('query.queryResults')}
                   {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
                     <span className="ml-2 text-xs text-blue-600">
                       ({filterConfigs.filter(f => f.column && f.value).length} filter
@@ -913,7 +915,7 @@ const Query: React.FC<QueryProps> = () => {
                   )}
                   {sortConfig && (
                     <span className="ml-2 text-xs text-green-600">
-                      (Sorted by {sortConfig.column} {sortConfig.direction})
+                      ({t('query.sortedBy')} {sortConfig.column} {sortConfig.direction})
                     </span>
                   )}
                 </h3>
@@ -922,8 +924,8 @@ const Query: React.FC<QueryProps> = () => {
                   return processedResult.rows.length === 0 ? (
                     <div className="text-sm text-gray-500">
                       {filterConfigs.some(f => f.column && f.value)
-                        ? 'No results match the filters'
-                        : 'No results found'}
+                        ? t('query.noResultsMatchFilters')
+                        : t('query.noResultsFound')}
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
@@ -955,7 +957,7 @@ const Query: React.FC<QueryProps> = () => {
                             <tr key={rowIndex} className="border-b hover:bg-gray-50">
                               {row.map((cell, cellIndex) => (
                                 <td key={cellIndex} className="px-4 py-2">
-                                  {cell === null ? 'NULL' : String(cell)}
+                                  {cell === null ? t('common.null') : String(cell)}
                                 </td>
                               ))}
                             </tr>
@@ -963,10 +965,10 @@ const Query: React.FC<QueryProps> = () => {
                         </tbody>
                       </table>
                       <div className="mt-4 text-xs text-gray-500">
-                        Showing {processedResult.rows.length} rows
+                        {t('query.showingRows', { count: processedResult.rows.length })}
                         {filterConfigs.some(f => f.column && f.value) && (
                           <span className="ml-2">
-                            (filtered from {queryResult.rows.length} total)
+                            ({t('query.filteredFromTotal', { total: queryResult.rows.length })})
                           </span>
                         )}
                       </div>
@@ -975,9 +977,7 @@ const Query: React.FC<QueryProps> = () => {
                 })()}
               </div>
             ) : (
-              <div className="text-sm text-gray-500">
-                Enter a query and click Run to see results, or click on a table to view its data
-              </div>
+              <div className="text-sm text-gray-500">{t('query.enterQueryInstructions')}</div>
             )}
           </div>
         </div>
@@ -988,7 +988,9 @@ const Query: React.FC<QueryProps> = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Confirm SQL Execution</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t('query.confirmSQLExecution')}
+              </h3>
               <button onClick={cancelSQLExecution} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -1002,10 +1004,7 @@ const Query: React.FC<QueryProps> = () => {
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-3">
-                The AI generated the following SQL query. This query contains potentially unsafe
-                operations that require your confirmation before execution.
-              </p>
+              <p className="text-sm text-gray-600 mb-3">{t('query.aiGeneratedSQLWarning')}</p>
 
               <div className="bg-gray-50 border rounded-md p-3">
                 <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
@@ -1016,10 +1015,10 @@ const Query: React.FC<QueryProps> = () => {
 
             <div className="flex justify-end space-x-3">
               <Button color="gray" onClick={cancelSQLExecution}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button color="failure" onClick={executeConfirmedSQL}>
-                Execute Anyway
+                {t('query.executeAnyway')}
               </Button>
             </div>
           </div>

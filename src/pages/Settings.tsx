@@ -65,7 +65,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{t('settings.settings')}</h1>
-            <p className="text-gray-600 mt-1">Configure your application preferences</p>
+            <p className="text-gray-600 mt-1">{t('settings.configurePreferences')}</p>
           </div>
           <button
             onClick={onBack}

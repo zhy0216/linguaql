@@ -10,13 +10,15 @@
     "back": "返回",
     "next": "下一页",
     "previous": "上一页",
-    "loading": "加载中...",
+    "loading": "加载中",
     "error": "错误",
     "success": "成功",
     "warning": "警告",
     "info": "信息",
     "confirm": "确认",
-    "close": "关闭"
+    "close": "关闭",
+    "page": "页",
+    "null": "NULL"
   },
   "database": {
     "connection": "数据库连接",
@@ -85,7 +87,29 @@
     "enterQuery": "请在此输入您的 SQL 查询...",
     "history": "历史记录",
     "run": "运行",
-    "naturalLanguage": "自然语言"
+    "naturalLanguage": "自然语言",
+    "querySession": "查询",
+    "noQueryHistory": "无查询历史",
+    "execute": "执行",
+    "clearAll": "清除全部",
+    "noFiltersApplied": "未应用筛选器",
+    "selectColumn": "选择列",
+    "filterValue": "筛选值",
+    "filter": "筛选器",
+    "applied": "已应用",
+    "noDataMatchesFilters": "没有数据匹配筛选条件",
+    "tableHasNoData": "表中无数据",
+    "showingRows": "显示 {{count}} 行",
+    "filteredFromTotal": "从总共 {{total}} 行中筛选",
+    "executingQuery": "正在执行查询",
+    "queryResults": "查询结果",
+    "sortedBy": "按以下排序",
+    "noResultsMatchFilters": "没有结果匹配筛选条件",
+    "noResultsFound": "未找到结果",
+    "enterQueryInstructions": "输入查询并点击运行以查看结果，或点击表格查看其数据",
+    "confirmSQLExecution": "确认 SQL 执行",
+    "aiGeneratedSQLWarning": "AI 生成了以下 SQL 查询。此查询包含可能不安全的操作，需要您确认后才能执行。",
+    "executeAnyway": "仍然执行"
   },
   "settings": {
     "settings": "设置",
@@ -104,7 +128,8 @@
     "chinese": "中文",
     "openRouterInfo": "OpenRouter 通过单一 API 提供多个 AI 模型的访问。您可以在此使用 OpenRouter API 密钥，或配置不同的 OpenAI 兼容端点。",
     "showApiKey": "显示 API 密钥",
-    "hideApiKey": "隐藏 API 密钥"
+    "hideApiKey": "隐藏 API 密钥",
+    "configurePreferences": "配置您的应用程序偏好"
   },
   "ai": {
     "convertToSql": "转换为 SQL",

@@ -6,6 +6,7 @@ import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
 import { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import dbService, { DatabaseTable, TableDataRequest, QueryResult } from '../services/DBService';
+import { aiService } from '../services/AIService';
 
 interface QuerySession {
   id: string;
@@ -142,6 +143,10 @@ const Query: React.FC<QueryProps> = () => {
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([]);
   const [filteredAndSortedData, setFilteredAndSortedData] = useState<QueryResult | null>(null);
+
+  // Modal state for SQL confirmation
+  const [showSQLConfirmModal, setShowSQLConfirmModal] = useState(false);
+  const [generatedSQL, setGeneratedSQL] = useState('');
 
   // Initialize with a default session on component mount
   useEffect(() => {
@@ -368,10 +373,9 @@ const Query: React.FC<QueryProps> = () => {
     return text.trim();
   };
 
-  // Execute query
+  // Execute query with SQL validation and AI generation
   const executeQuery = async () => {
     const queryToExecute = getQueryToExecute();
-    console.log('queryToExecute', queryToExecute);
 
     if (!queryToExecute) return;
 
@@ -379,7 +383,74 @@ const Query: React.FC<QueryProps> = () => {
     setQueryResult(null);
 
     try {
-      const result = await dbService.executeQuery(queryToExecute);
+      let finalSQL = queryToExecute;
+
+      // Step 1: Check if the query is valid SQL
+      if ((dbService.constructor as any).isValidSQL(queryToExecute)) {
+        // Valid SQL - execute directly
+        await executeValidatedSQL(finalSQL);
+      } else {
+        // Invalid SQL - use AI service to generate SQL
+        try {
+          if (!aiService.isConfigured()) {
+            throw new Error('AI service is not configured. Please check your settings.');
+          }
+
+          // Get database schema for AI context
+          const tableSchemas = await Promise.all(
+            databaseTables.map(async table => {
+              const columns = await dbService.getTableColumns(table.schema, table.name);
+              return {
+                name: table.name,
+                columns: columns.map(col => ({
+                  name: col.name,
+                  type: col.type,
+                  nullable: col.nullable,
+                  primary_key: col.primary_key,
+                })),
+              };
+            })
+          );
+
+          // Generate SQL using AI service
+          const aiGeneratedSQL = await aiService.convertToSQL(queryToExecute, tableSchemas);
+
+          // Step 2: Check if generated SQL is safe
+          if ((dbService.constructor as any).isSafeSQL(aiGeneratedSQL)) {
+            // Safe SQL - execute directly
+            finalSQL = aiGeneratedSQL;
+            await executeValidatedSQL(finalSQL);
+          } else {
+            // Unsafe SQL - show confirmation modal
+            setGeneratedSQL(aiGeneratedSQL);
+            setShowSQLConfirmModal(true);
+            setIsExecuting(false);
+            return;
+          }
+        } catch (aiError: unknown) {
+          console.error('Failed to generate SQL with AI:', aiError);
+          setQueryResult({
+            columns: ['AI Error'],
+            rows: [[aiError instanceof Error ? aiError.message : String(aiError)]],
+          });
+          setIsExecuting(false);
+          return;
+        }
+      }
+    } catch (error: unknown) {
+      console.error('Failed to execute query:', error);
+      setQueryResult({
+        columns: ['Error'],
+        rows: [[error instanceof Error ? error.message : String(error)]],
+      });
+      setIsExecuting(false);
+    }
+  };
+
+  // Helper function to execute validated SQL
+  const executeValidatedSQL = async (sql: string) => {
+    try {
+      const result = await dbService.executeQuery(sql);
 
       setQueryResult({
         columns: result.columns,
@@ -387,16 +458,29 @@ const Query: React.FC<QueryProps> = () => {
       });
 
       // Add to history
-      setQueryHistory(prev => [queryToExecute, ...prev].slice(0, 20)); // Keep last 20 queries
+      setQueryHistory(prev => [sql, ...prev].slice(0, 20)); // Keep last 20 queries
     } catch (error: unknown) {
-      console.error('Failed to execute query:', error);
+      console.error('Failed to execute validated SQL:', error);
       setQueryResult({
-        columns: ['Error'],
+        columns: ['Execution Error'],
         rows: [[error instanceof Error ? error.message : String(error)]],
       });
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  // Execute confirmed SQL from modal
+  const executeConfirmedSQL = async () => {
+    setShowSQLConfirmModal(false);
+    setIsExecuting(true);
+    await executeValidatedSQL(generatedSQL);
+  };
+
+  // Cancel SQL execution from modal
+  const cancelSQLExecution = () => {
+    setShowSQLConfirmModal(false);
+    setGeneratedSQL('');
   };
 
   // Cancel query execution
@@ -888,6 +972,49 @@ const Query: React.FC<QueryProps> = () => {
           </div>
         </div>
       </div>
+
+      {/* SQL Confirmation Modal */}
+      {showSQLConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Confirm SQL Execution</h3>
+              <button onClick={cancelSQLExecution} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-3">
+                The AI generated the following SQL query. This query contains potentially unsafe
+                operations that require your confirmation before execution.
+              </p>
+
+              <div className="bg-gray-50 border rounded-md p-3">
+                <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                  {generatedSQL}
+                </pre>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <Button color="gray" onClick={cancelSQLExecution}>
+                Cancel
+              </Button>
+              <Button color="failure" onClick={executeConfirmedSQL}>
+                Execute Anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -105,15 +105,24 @@ ${schemaContext}
 Rules:
 1. Return ONLY the SQL query, no explanations or markdown formatting
 2. Use proper ${databaseType} syntax
-3. Be precise with table and column names
-4. Use appropriate JOINs when needed
-5. Include proper WHERE clauses for filtering
-6. Use LIMIT for result limiting when appropriate
-7. Handle case-insensitive searches with ILIKE (PostgreSQL) or LIKE with LOWER()
+3. Be EXTREMELY careful with table and column names - respect exact case sensitivity
+4. Use double quotes around table/column names that contain uppercase letters or special characters
+5. Use appropriate JOINs when needed
+6. Include proper WHERE clauses for filtering
+7. Use LIMIT for result limiting when appropriate
+8. Handle case-insensitive searches with ILIKE (PostgreSQL) or LIKE with LOWER()
 
-Example:
+IMPORTANT: Pay special attention to case sensitivity in table and column names. If a table is named "User" (with uppercase U), you MUST use "User" with quotes, not "user".
+
+Examples:
+Input: "Show me all users"
+Output: SELECT * FROM "User";
+
 Input: "Show me all users with email containing gmail"
-Output: SELECT * FROM users WHERE email ILIKE '%gmail%';`;
+Output: SELECT * FROM "User" WHERE email ILIKE '%gmail%';
+
+Input: "Get user names and their order counts"
+Output: SELECT u.name, COUNT(o.id) as order_count FROM "User" u LEFT JOIN "Order" o ON u.id = o.user_id GROUP BY u.id, u.name;`;
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -277,6 +286,7 @@ Rules:
    */
   isConfigured(): boolean {
     const config = this.getConfig();
+    console.log(config);
     return !!(config.apiKey && config.baseUrl && config.model);
   }
 

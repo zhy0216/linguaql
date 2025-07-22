@@ -31,7 +31,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     setLocalConfig({
       apiKey: '',
       baseUrl: 'https://openrouter.ai/api/v1',
-      model: 'gpt-3.5-turbo',
+      model: 'qwen/qwen-turbo',
     });
   };
 
@@ -43,12 +43,10 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   };
 
   const commonModels = [
-    'gpt-3.5-turbo',
-    'gpt-4',
-    'gpt-4-turbo',
-    'claude-3-haiku',
-    'claude-3-sonnet',
-    'claude-3-opus',
+    'qwen/qwen-turbo',
+    'openai/gpt-4.1',
+    'anthropic/claude-3.7-sonnet',
+    'deepseek/deepseek-r1-0528',
   ];
 
   return (

@@ -188,6 +188,43 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     setTestResult(null);
   };
 
+  // Handle double click to connect and open query page
+  const handleServerDoubleClick = async (server: ServerConfig) => {
+    // First select the server
+    selectServer(server);
+
+    // Then connect to the database
+    const newConfig = {
+      host: server.host,
+      port: server.port,
+      username: server.username,
+      password: server.password,
+      database: server.database,
+    };
+
+    setIsConnecting(true);
+    try {
+      const result = await dbService.testDatabaseConnection(newConfig);
+      if (result.success) {
+        // Connection successful, navigate to query page
+        onDatabaseConnected();
+      } else {
+        // Show connection error
+        setTestResult(result);
+        setTestSuccess(false);
+      }
+    } catch (error) {
+      console.error('Connection failed:', error);
+      setTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+      });
+      setTestSuccess(false);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const saveCurrentServer = () => {
     if (!selectedServerId) return;
 
@@ -250,6 +287,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                   key={server.id}
                   className={`p-1.5 mb-1 rounded border shadow-sm cursor-pointer transition-all hover:bg-blue-50 ${selectedServerId === server.id ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-slate-200'}`}
                   onClick={() => selectServer(server)}
+                  onDoubleClick={() => handleServerDoubleClick(server)}
                 >
                   <div className="flex justify-between items-center">
                     <div className="overflow-hidden">

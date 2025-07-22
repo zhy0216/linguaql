@@ -1,269 +1,179 @@
-# Query.tsx Refactoring Steps
+# LinguaQL Query.tsx Refactoring Plan - Updated
 
-## Overview
+## Current Status (566 lines)
 
-Refactoring the large Query.tsx component (1000+ lines) into smaller, maintainable pieces.
+The Query.tsx component has been significantly improved from the original 1000+ lines through several successful refactoring steps:
 
-**Current Status**: Planning Phase ✅  
-**Started**: 2025-07-22  
-**Target**: Modular, maintainable architecture
+### ✅ Already Completed Refactoring:
 
----
+1. **Component Extraction (Phase 2 - Partially Complete)**
+   - ✅ `QuerySidebar.tsx` - Left sidebar with sessions and tables
+   - ✅ `QueryResults.tsx` - Results display with filtering
+   - ✅ `SQLConfirmationModal.tsx` - SQL confirmation dialog
+   - ✅ `SessionsList.tsx` - Query sessions management
+   - ✅ `DatabaseTablesList.tsx` - Database tables listing
+   - ✅ `FilterControls.tsx` - Filtering controls
+   - ✅ `ResultsTable.tsx` - Table results display
 
-## Phase 1: Extract Custom Hooks 🎯 **HIGH PRIORITY**
+2. **Utility Extraction (Phase 3 - Partially Complete)**
+   - ✅ `queryUtils.ts` - SQL validation and processing utilities
 
-### Step 1.1: Extract Session Management Hook
+3. **Service Integration**
+   - ✅ `DBService` - Database operations
+   - ✅ `AIService` - AI-powered query assistance
+   - ✅ Zustand stores for state management
 
-- [ ] Create `src/hooks/useQuerySessions.ts`
-- [ ] Move state:
-  - `querySessions: QuerySession[]`
-  - `activeSessionId: string | null`
-- [ ] Move functions:
-  - `createNewSession()`
-  - Session localStorage logic
-  - Session-related useEffects
-- [ ] Update Query.tsx to use the hook
-- [ ] Test session functionality
+### 🔄 Next Phase: Custom Hooks Extraction (Phase 1)
 
-### Step 1.2: Extract Database Operations Hook
+**Priority: HIGH** - This will provide the most significant improvement in maintainability
 
-- [ ] Create `src/hooks/useDatabaseOperations.ts`
-- [ ] Move state:
-  - `databaseTables: DatabaseTable[]`
-  - `selectedTable: DatabaseTable | null`
-  - `tableData: QueryResult | null`
-  - `isLoadingTableData: boolean`
-- [ ] Move functions:
-  - `fetchDatabaseTables()`
-  - `loadTableData(table)`
-  - Table pagination logic
-- [ ] Update Query.tsx to use the hook
-- [ ] Test database operations
+#### Hook 1: `useQuerySessions.ts`
 
-### Step 1.3: Extract Query Execution Hook
+**Purpose:** Manage query session state and operations
+**Extract from Query.tsx lines ~52-120:**
 
-- [ ] Create `src/hooks/useQueryExecution.ts`
-- [ ] Move state:
-  - `queryInput: string`
-  - `queryResult: QueryResult | null`
-  - `isExecuting: boolean`
-  - `queryHistory: string[]`
-  - `showSQLConfirmModal: boolean`
-  - `generatedSQL: string`
-- [ ] Move functions:
-  - `executeQuery()`
-  - `executeValidatedSQL()`
-  - `executeConfirmedSQL()`
-  - `cancelSQLExecution()`
-  - AI service integration logic
-- [ ] Update Query.tsx to use the hook
-- [ ] Test query execution
+```typescript
+// State to extract:
+(-querySessions,
+  setQuerySessions - activeSessionId,
+  setActiveSessionId - queryHistory,
+  setQueryHistory - showHistory,
+  setShowHistory -
+    // Functions to extract:
+    createNewSession() -
+    deleteSession() -
+    switchSession() -
+    saveSessionToStorage() -
+    loadSessionsFromStorage());
+```
 
-### Step 1.4: Extract Filtering and Sorting Hook
+#### Hook 2: `useDatabaseOperations.ts`
 
-- [ ] Create `src/hooks/useTableFiltering.ts`
-- [ ] Move state:
-  - `sortConfig: SortConfig | null`
-  - `filterConfigs: FilterConfig[]`
-  - `filteredAndSortedData: QueryResult | null`
-- [ ] Move functions:
-  - `handleSort(column)`
-  - `addFilter()`, `updateFilter()`, `removeFilter()`
-  - `clearAllFilters()`
-  - `applyFilterAndSort()` logic
-- [ ] Update Query.tsx to use the hook
-- [ ] Test filtering and sorting
+**Purpose:** Handle database table operations and data loading
+**Extract from Query.tsx lines ~56-66, ~200-300:**
 
----
+```typescript
+// State to extract:
+(-databaseTables,
+  setDatabaseTables - selectedTable,
+  setSelectedTable - tableData,
+  setTableData - isLoadingTableData,
+  setIsLoadingTableData -
+    // Functions to extract:
+    fetchDatabaseTables() -
+    loadTableData() -
+    handleTableSelect() -
+    refreshTableData());
+```
 
-## Phase 2: Extract UI Components 🎯 **HIGH PRIORITY**
+#### Hook 3: `useQueryExecution.ts`
 
-### Step 2.1: Extract Sidebar Components ✅ **COMPLETED**
+**Purpose:** Handle query execution and AI integration
+**Extract from Query.tsx lines ~68-83, ~300-450:**
 
-- [x] Create `src/components/query/QuerySidebar.tsx`
-- [x] Extract entire left sidebar structure
-- [x] Create `src/components/query/SessionsList.tsx`
-  - Move sessions list rendering
-  - Include session selection logic
-- [x] Create `src/components/query/DatabaseTablesList.tsx`
-  - Move database tables list rendering
-  - Include table selection logic
-- [x] Update Query.tsx to use QuerySidebar
-- [x] Test sidebar functionality
+```typescript
+// State to extract:
+(-queryInput,
+  setQueryInput - queryResult,
+  setQueryResult - isExecuting,
+  setIsExecuting - showSQLConfirmModal,
+  setShowSQLConfirmModal - generatedSQL,
+  setGeneratedSQL -
+    // Functions to extract:
+    executeQuery() -
+    executeCurrentStatement() -
+    handleNaturalLanguageQuery() -
+    confirmAndExecuteSQL() -
+    handleAIQueryGeneration());
+```
 
-### Step 2.2: Extract Query Input Component
+#### Hook 4: `useTableFiltering.ts`
 
-- [ ] Create `src/components/query/QueryInput.tsx`
-- [ ] Move CodeMirror setup and configuration
-- [ ] Move SQL highlighting logic (`sqlStatementHighlight`)
-- [ ] Include toolbar functionality
-- [ ] Move query history dropdown
-- [ ] Update Query.tsx to use QueryInput
-- [ ] Test query input functionality
+**Purpose:** Manage filtering, sorting, and data processing
+**Extract from Query.tsx lines ~75-78, ~450-550:**
 
-### Step 2.3: Extract Results Display Component ✅ **COMPLETED**
+```typescript
+// State to extract:
+(-sortConfig,
+  setSortConfig - filterConfigs,
+  setFilterConfigs - filteredAndSortedData,
+  setFilteredAndSortedData - pagination,
+  setPagination -
+    // Functions to extract:
+    addFilter() -
+    updateFilter() -
+    removeFilter() -
+    clearAllFilters() -
+    handleSort() -
+    applyFilterAndSort() -
+    handlePaginationChange());
+```
 
-- [x] Create `src/components/query/QueryResults.tsx`
-- [x] Move results table rendering logic
-- [x] Create `src/components/query/ResultsTable.tsx`
-  - Move table structure and row rendering
-  - Include sorting indicators
-- [x] Create `src/components/query/FilterControls.tsx`
-  - Move filter input controls
-  - Include add/remove filter buttons
-- [x] Update Query.tsx to use QueryResults
-- [x] Test results display
+### 🔄 Remaining Phases
 
-### Step 2.4: Extract Modal Components ✅ **COMPLETED**
+#### Phase 4: Enhanced Type Definitions
 
-- [x] Create `src/components/query/SQLConfirmationModal.tsx`
-- [x] Move SQL confirmation modal structure
-- [x] Include modal state management
-- [x] Update Query.tsx to use modal component
-- [x] Test modal functionality
+**Priority: MEDIUM**
 
----
+Create `src/types/query.ts`:
 
-## Phase 3: Extract Utility Functions 🎯 **MEDIUM PRIORITY**
+```typescript
+// Centralize all query-related interfaces:
+- QuerySession (enhanced with more metadata)
+- Pagination (with better generic support)
+- SortConfig (with column type information)
+- FilterConfig (with operator support)
+- QueryExecutionContext
+- QueryResultMetadata
+```
 
-### Step 3.1: Create Query Utilities
+#### Phase 5: Performance Optimizations
 
-- [ ] Create `src/utils/queryUtils.ts`
-- [ ] Move utility functions:
-  - SQL statement extraction from CodeMirror
-  - Query validation helpers
-  - History management utilities
-  - SQL safety checking logic
-- [ ] Update components to use utilities
-- [ ] Test utility functions
+**Priority: LOW**
 
-### Step 3.2: Create Table Data Utilities
+1. **Memoization Opportunities:**
+   - Memoize filtered and sorted data calculations
+   - Memoize table column definitions
+   - Optimize re-renders with React.memo for components
 
-- [ ] Create `src/utils/tableUtils.ts`
-- [ ] Move table-related utilities:
-  - Sorting logic (numeric vs string)
-  - Filtering logic (case-insensitive matching)
-  - Data processing functions
-  - Pagination helpers
-- [ ] Update components to use utilities
-- [ ] Test utility functions
+2. **Code Splitting:**
+   - Lazy load AI service components
+   - Dynamic imports for heavy utilities
 
----
+3. **State Management Optimization:**
+   - Consider moving more state to Zustand stores
+   - Implement proper state normalization
 
-## Phase 4: Improve Type Safety 🎯 **MEDIUM PRIORITY**
+### 📊 Expected Impact After Hook Extraction
 
-### Step 4.1: Extract Types
+**Current:** 566 lines
+**After Hook Extraction:** ~200-250 lines
+**Maintainability:** Significantly improved
+**Testability:** Each hook can be tested independently
+**Reusability:** Hooks can be reused across components
 
-- [ ] Create `src/types/query.ts`
-- [ ] Move interfaces:
-  - `QuerySession`
-  - `Pagination`
-  - `SortConfig`
-  - `FilterConfig`
-  - `QueryProps`
-- [ ] Add more specific types:
-  - Query execution states
-  - Filter operations
-  - Sort directions
-- [ ] Update all files to import from types
-- [ ] Verify type safety
+### 🚀 Implementation Order
 
-### Step 4.2: Add Generic Types
+1. **Week 1:** Extract `useQuerySessions` and `useDatabaseOperations`
+2. **Week 2:** Extract `useQueryExecution` and `useTableFiltering`
+3. **Week 3:** Enhance type definitions and add comprehensive tests
+4. **Week 4:** Performance optimizations and documentation
 
-- [ ] Add generic types for better reusability
-- [ ] Improve error handling types
-- [ ] Add union types for better type safety
-- [ ] Update components with better typing
+### 🧪 Testing Strategy
 
----
+- Unit tests for each custom hook
+- Integration tests for hook interactions
+- Component tests for the refactored Query.tsx
+- Performance benchmarks before/after refactoring
 
-## Phase 5: Performance Optimizations 🎯 **LOW PRIORITY**
+### 📝 Success Metrics
 
-### Step 5.1: Memoization
-
-- [ ] Add `useMemo` for expensive calculations:
-  - `applyFilterAndSort` result
-  - Processed table data
-- [ ] Add `useCallback` for event handlers:
-  - Sort handlers
-  - Filter handlers
-  - Query execution handlers
-- [ ] Add `React.memo` for components:
-  - ResultsTable
-  - FilterControls
-  - SessionsList
-
-### Step 5.2: Lazy Loading
-
-- [ ] Implement lazy loading for large result sets
-- [ ] Add virtualization for large tables
-- [ ] Optimize CodeMirror rendering
-- [ ] Add pagination for query results
+- [ ] Query.tsx reduced to under 250 lines
+- [ ] 4 reusable custom hooks created
+- [ ] 90%+ test coverage for hooks
+- [ ] No regression in functionality
+- [ ] Improved development experience (faster builds, better IntelliSense)
 
 ---
 
-## Phase 6: Code Organization 🎯 **LOW PRIORITY**
-
-### Step 6.1: Constants Extraction
-
-- [ ] Create `src/constants/queryConstants.ts`
-- [ ] Move magic numbers:
-  - Default page sizes
-  - History limits
-  - UI dimensions
-- [ ] Move default values:
-  - Default configurations
-  - Initial states
-
-### Step 6.2: Configuration
-
-- [ ] Extract CodeMirror configuration
-- [ ] Create reusable theme configurations
-- [ ] Centralize component configurations
-
----
-
-## Testing Checklist
-
-After each phase, verify:
-
-- [ ] All existing functionality works
-- [ ] No TypeScript errors
-- [ ] No console errors
-- [ ] Performance is maintained
-- [ ] Code is more readable
-- [ ] Components are properly isolated
-
----
-
-## Progress Tracking
-
-### Completed Steps
-
-- [x] Planning and documentation
-- [x] **Step 2.1**: Extract Sidebar Components (QuerySidebar, SessionsList, DatabaseTablesList)
-- [x] **Step 2.3**: Extract Results Display Component (QueryResults, ResultsTable, FilterControls)
-- [x] **Step 2.4**: Extract Modal Components (SQLConfirmationModal)
-
-### Current Step
-
-- [ ] **Next**: Continue with Step 2.2 (Query Input) or move to Phase 1 (Custom Hooks)
-
-### Notes
-
-- Keep original Query.tsx as backup until refactoring is complete
-- Test each step thoroughly before moving to the next
-- Update imports across the codebase as components are extracted
-- Consider creating a `src/components/query/index.ts` barrel export file
-
----
-
-## Benefits Expected
-
-✅ **Maintainability**: Smaller, focused components  
-✅ **Reusability**: Extracted components can be reused  
-✅ **Testability**: Easier to unit test individual pieces  
-✅ **Performance**: Better optimization opportunities  
-✅ **Readability**: Clearer separation of concerns  
-✅ **Type Safety**: Better TypeScript integration  
-✅ **Developer Experience**: Easier to navigate and modify code
+**Note:** This refactoring plan builds upon the excellent work already completed. The component extraction phase has been largely successful, and the focus now shifts to extracting business logic into custom hooks for maximum maintainability and reusability.

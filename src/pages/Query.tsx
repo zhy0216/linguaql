@@ -19,27 +19,12 @@ import {
   getCurrentSqlStatement,
   getCurrentLineStatement,
 } from '../utils/queryUtils';
+import { useTableFiltering, useProcessedData } from '../hooks/useTableFiltering';
 
 interface QuerySession {
   id: string;
   name: string;
   createdAt: string;
-}
-
-interface Pagination {
-  page: number;
-  pageSize: number;
-  total?: number;
-}
-
-interface SortConfig {
-  column: string;
-  direction: 'asc' | 'desc';
-}
-
-interface FilterConfig {
-  column: string;
-  value: string;
 }
 
 interface QueryProps {}
@@ -57,11 +42,21 @@ const Query: React.FC<QueryProps> = () => {
   const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([]);
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
 
-  // State for table data pagination
-  const [pagination, setPagination] = useState<Pagination>({
-    page: 1,
-    pageSize: 100,
-  });
+  // Use table filtering hook
+  const {
+    sortConfig,
+    filterConfigs,
+    pagination,
+    setPagination,
+    handleSort,
+    addFilter,
+    updateFilter,
+    removeFilter,
+    clearAllFilters,
+    applyFilterAndSort,
+  } = useTableFiltering({ initialPageSize: 100 });
+
+  // State for table data
   const [tableData, setTableData] = useState<QueryResult | null>(null);
   const [isLoadingTableData, setIsLoadingTableData] = useState(false);
 
@@ -72,10 +67,8 @@ const Query: React.FC<QueryProps> = () => {
   const [queryHistory, setQueryHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // State for sorting and filtering
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([]);
-  const [filteredAndSortedData, setFilteredAndSortedData] = useState<QueryResult | null>(null);
+  // Use processed data hook for filtered and sorted data
+  const filteredAndSortedData = useProcessedData(tableData, applyFilterAndSort);
 
   // Modal state for SQL confirmation
   const [showSQLConfirmModal, setShowSQLConfirmModal] = useState(false);
@@ -336,103 +329,6 @@ const Query: React.FC<QueryProps> = () => {
     setQueryInput(query);
     setShowHistory(false);
   };
-
-  // Handle column sorting
-  const handleSort = (column: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.column === column && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ column, direction });
-  };
-
-  // Apply filtering and sorting to data
-  const applyFilterAndSort = (data: QueryResult) => {
-    if (!data) return data;
-
-    let processedData = { ...data };
-
-    // Apply filtering - support multiple filters
-    filterConfigs.forEach(filterConfig => {
-      if (filterConfig.column && filterConfig.value) {
-        const columnIndex = data.columns.indexOf(filterConfig.column);
-        if (columnIndex !== -1) {
-          processedData.rows = processedData.rows.filter(row => {
-            const cellValue = row[columnIndex];
-            return (
-              cellValue !== null &&
-              String(cellValue).toLowerCase().includes(filterConfig.value.toLowerCase())
-            );
-          });
-        }
-      }
-    });
-
-    // Apply sorting
-    if (sortConfig) {
-      const columnIndex = data.columns.indexOf(sortConfig.column);
-      if (columnIndex !== -1) {
-        processedData.rows = [...processedData.rows].sort((a, b) => {
-          const aVal = a[columnIndex];
-          const bVal = b[columnIndex];
-
-          // Handle null values
-          if (aVal === null && bVal === null) return 0;
-          if (aVal === null) return sortConfig.direction === 'asc' ? -1 : 1;
-          if (bVal === null) return sortConfig.direction === 'asc' ? 1 : -1;
-
-          // Convert to strings for comparison
-          const aStr = String(aVal);
-          const bStr = String(bVal);
-
-          // Try numeric comparison first
-          const aNum = Number(aVal);
-          const bNum = Number(bVal);
-          if (!isNaN(aNum) && !isNaN(bNum)) {
-            return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
-          }
-
-          // String comparison
-          const comparison = aStr.localeCompare(bStr);
-          return sortConfig.direction === 'asc' ? comparison : -comparison;
-        });
-      }
-    }
-
-    return processedData;
-  };
-
-  // Add a new filter
-  const addFilter = () => {
-    setFilterConfigs([...filterConfigs, { column: '', value: '' }]);
-  };
-
-  // Update a specific filter
-  const updateFilter = (index: number, updates: Partial<FilterConfig>) => {
-    const newFilters = [...filterConfigs];
-    newFilters[index] = { ...newFilters[index], ...updates };
-    setFilterConfigs(newFilters);
-  };
-
-  // Remove a specific filter
-  const removeFilter = (index: number) => {
-    setFilterConfigs(filterConfigs.filter((_, i) => i !== index));
-  };
-
-  // Clear all filters
-  const clearAllFilters = () => {
-    setFilterConfigs([]);
-  };
-
-  // Update filtered and sorted data when tableData, sortConfig, or filterConfigs changes
-  useEffect(() => {
-    if (tableData) {
-      const processed = applyFilterAndSort(tableData);
-      setFilteredAndSortedData(processed);
-    } else {
-      setFilteredAndSortedData(null);
-    }
-  }, [tableData, sortConfig, filterConfigs]);
 
   return (
     <div className="flex h-screen w-full">

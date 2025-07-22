@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import DatabaseConnection from './pages/DatabaseConnection/DatabaseConnection';
 import Query from './pages/Query';
 import Settings from './pages/Settings';
+import './i18n';
 
 function App() {
   // 检查URL参数以确定初始页面

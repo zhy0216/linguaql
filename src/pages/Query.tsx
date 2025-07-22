@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Select } from 'flowbite-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { StateField } from '@codemirror/state';
@@ -118,6 +119,7 @@ const sqlStatementHighlight = StateField.define<DecorationSet>({
 });
 
 const Query: React.FC<QueryProps> = () => {
+  const { t } = useTranslation();
   // CodeMirror ref for dynamic query extraction
   const codeMirrorRef = useRef<ReactCodeMirrorRef>(null);
 
@@ -608,10 +610,10 @@ const Query: React.FC<QueryProps> = () => {
         {/* Query Sessions */}
         <div className="p-3 border-b border-gray-200">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-semibold">Query Sessions</h3>
+            <h3 className="text-sm font-semibold">{t('query.sessions')}</h3>
             <div className="flex gap-1">
               <Button size="xs" onClick={createNewSession}>
-                New
+                {t('query.newSession')}
               </Button>
             </div>
           </div>
@@ -631,9 +633,9 @@ const Query: React.FC<QueryProps> = () => {
 
         {/* Database Tables */}
         <div className="p-3 flex-grow overflow-y-auto">
-          <h3 className="text-sm font-semibold mb-2">Database Tables</h3>
+          <h3 className="text-sm font-semibold mb-2">{t('database.databaseTables')}</h3>
           {databaseTables.length === 0 ? (
-            <div className="text-sm text-gray-500">No tables found</div>
+            <div className="text-sm text-gray-500">{t('database.noTablesFound')}</div>
           ) : (
             <div className="space-y-1">
               {databaseTables.map((table, index) => (
@@ -662,7 +664,7 @@ const Query: React.FC<QueryProps> = () => {
                 value={queryInput}
                 onChange={value => setQueryInput(value)}
                 extensions={[sql(), sqlStatementHighlight]}
-                placeholder="Enter your SQL query here..."
+                placeholder={t('query.enterQuery')}
                 theme="light"
                 basicSetup={{
                   lineNumbers: true,

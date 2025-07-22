@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../stores/settingsStore';
 import { OpenAIConfig } from '../types/config';
 
@@ -7,10 +8,13 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ onBack }) => {
-  const { settings, updateOpenAIConfig, resetOpenAIConfig } = useSettingsStore();
+  const { t } = useTranslation();
+  const { settings, updateOpenAIConfig, resetOpenAIConfig, updateLanguage, getLanguage } =
+    useSettingsStore();
   const [localConfig, setLocalConfig] = useState(settings.openai);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -35,6 +39,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     });
   };
 
+  const handleLanguageChange = (language: string) => {
+    setCurrentLanguage(language);
+    updateLanguage(language);
+  };
+
   const handleInputChange = (field: keyof OpenAIConfig, value: string) => {
     setLocalConfig((prev: OpenAIConfig) => ({
       ...prev,
@@ -55,27 +64,52 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{t('settings.settings')}</h1>
             <p className="text-gray-600 mt-1">Configure your application preferences</p>
           </div>
           <button
             onClick={onBack}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            ← Back
+            ← {t('common.back')}
           </button>
+        </div>
+
+        {/* Language Configuration Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">{t('settings.language')}</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('settings.selectLanguage')}
+              </label>
+              <select
+                value={currentLanguage}
+                onChange={e => handleLanguageChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+              >
+                <option value="en">{t('settings.english')}</option>
+                <option value="zh">{t('settings.chinese')}</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* OpenAI Configuration Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">OpenAI Configuration</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('settings.openaiConfig')}</h2>
           </div>
 
           <div className="space-y-4">
             {/* API Key */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('settings.apiKey')}
+              </label>
               <div className="relative">
                 <input
                   type={showApiKey ? 'text' : 'password'}
@@ -120,7 +154,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
             {/* Base URL */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('settings.baseUrl')}
+              </label>
               <input
                 type="url"
                 value={localConfig.baseUrl}
@@ -133,7 +169,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
             {/* Model */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('settings.model')}
+              </label>
               <div className="relative">
                 <select
                   value={localConfig.model}
@@ -162,7 +200,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
             {/* Custom Model Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Custom Model (Optional)
+                {t('settings.customModel')}
               </label>
               <input
                 type="text"
@@ -180,7 +218,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               onClick={handleReset}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Reset to Defaults
+              {t('settings.resetSettings')}
             </button>
             <button
               onClick={handleSave}
@@ -191,7 +229,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
             >
-              {isSaving ? '✓ Saved!' : 'Save Settings'}
+              {isSaving ? `✓ ${t('settings.settingsSaved')}` : t('settings.saveSettings')}
             </button>
           </div>
         </div>
@@ -211,10 +249,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">About OpenRouter</h3>
               <div className="mt-2 text-sm text-blue-700">
-                <p>
-                  OpenRouter provides access to multiple AI models through a unified API. You can
-                  use models from OpenAI, Anthropic, and other providers with a single API key.
-                </p>
+                <p>{t('settings.openRouterInfo')}</p>
                 <p className="mt-2">
                   <a
                     href="https://openrouter.ai"

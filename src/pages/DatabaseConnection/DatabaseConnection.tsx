@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { Button, TextInput as Input, Label, Badge, Modal } from 'flowbite-react';
 import { useServerConfigStore } from '../../stores/serverConfigStore';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettings }) => {
+  const { t } = useTranslation();
   // Zustand store
   const {
     servers,
@@ -259,7 +261,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     <div className="flex h-full w-full">
       <div className="w-64 border-r border-indigo-100 p-3 overflow-y-auto flex flex-col">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">服务器管理</h3>
+          <h3 className="text-lg font-semibold">{t('database.serverManagement')}</h3>
           {onOpenSettings && (
             <Button size="xs" outline color="light" onClick={onOpenSettings} title="Settings">
               ⚙️
@@ -269,17 +271,17 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
 
         <div className="mb-3 flex flex-col gap-1">
           <Button className="w-full" onClick={() => setShowNewServerModal(true)}>
-            + 新建服务器
+            + {t('database.addServer')}
           </Button>
           <Button color="light" className="w-full" onClick={() => setShowUrlModal(true)}>
-            + 从 URL 添加
+            + {t('database.addFromUrl')}
           </Button>
         </div>
 
         <div className="max-h-52 overflow-y-auto">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">服务器列表</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-2">{t('database.serverList')}</h4>
           {servers.length === 0 ? (
-            <div className="text-sm text-gray-500">暂无服务器</div>
+            <div className="text-sm text-gray-500">{t('database.noServersConfigured')}</div>
           ) : (
             <div className="flex flex-col gap-1">
               {servers.map(server => (
@@ -328,7 +330,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
               disabled={!selectedServerId}
               className="flex justify-center items-center"
             >
-              清除选择
+              {t('database.clearSelection')}
             </Button>
             <Button
               color="blue"
@@ -337,7 +339,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
               disabled={!selectedServerId || !isDirty}
               className="flex justify-center items-center"
             >
-              保存更改 (⌘S)
+              {t('database.saveChanges')} (⌘S)
             </Button>
           </div>
         </div>
@@ -347,17 +349,17 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
         <div className="flex-1 p-6 pt-2 flex flex-col">
           <div className="max-w-3xl mx-auto flex flex-col w-full">
             <h2 className="text-2xl font-bold mb-4 flex items-center justify-between">
-              PostgreSQL 数据库连接
+              {t('database.postgresqlConnection')}
               {isDirty && (
                 <Badge color="warning" className="ml-2">
-                  未保存
+                  {t('database.unsaved')}
                 </Badge>
               )}
             </h2>
 
             <div className="mb-4 flex items-center">
               <Label htmlFor="host" className="flex items-center w-24">
-                主机地址 <span className="text-red-500">*</span>
+                {t('database.hostAddress')} <span className="text-red-500">*</span>
               </Label>
               <Input
                 type="text"
@@ -373,7 +375,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
 
             <div className="mb-4 flex items-center">
               <Label htmlFor="port" className="flex items-center w-24">
-                端口
+                {t('database.port')}
               </Label>
               <Input
                 type="number"
@@ -390,7 +392,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
 
             <div className="mb-4 flex items-center">
               <Label htmlFor="username" className="flex items-center w-24">
-                用户名 <span className="text-red-500">*</span>
+                {t('database.username')} <span className="text-red-500">*</span>
               </Label>
               <Input
                 type="text"
@@ -406,7 +408,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
 
             <div className="mb-4 flex items-center">
               <Label htmlFor="password" className="flex items-center w-24">
-                密码
+                {t('database.password')}
               </Label>
               <Input
                 type="password"

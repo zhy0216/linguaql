@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Select } from 'flowbite-react';
+import { Button } from 'flowbite-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { StateField } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
@@ -13,6 +13,8 @@ import dbService, {
   DBService,
 } from '../services/DBService';
 import { aiService } from '../services/AIService';
+import QuerySidebar from '../components/query/QuerySidebar';
+import QueryResults from '../components/query/QueryResults';
 
 interface QuerySession {
   id: string;
@@ -605,53 +607,15 @@ const Query: React.FC<QueryProps> = () => {
 
   return (
     <div className="flex h-screen w-full">
-      {/* Left Sidebar - Fixed Width */}
-      <div className="w-80 min-w-80 max-w-80 border-r border-gray-200 flex flex-col h-full bg-gray-50">
-        {/* Query Sessions */}
-        <div className="p-3 border-b border-gray-200">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-semibold">{t('query.sessions')}</h3>
-            <div className="flex gap-1">
-              <Button size="xs" onClick={createNewSession}>
-                {t('query.newSession')}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-1 max-h-40 overflow-y-auto">
-            {querySessions.map(session => (
-              <div
-                key={session.id}
-                className={`p-1.5 text-sm rounded cursor-pointer 
-                  ${activeSessionId === session.id ? 'bg-blue-100 font-medium' : 'hover:bg-gray-100'}`}
-                onClick={() => setActiveSessionId(session.id)}
-              >
-                {session.name}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Database Tables */}
-        <div className="p-3 flex-grow overflow-y-auto">
-          <h3 className="text-sm font-semibold mb-2">{t('database.databaseTables')}</h3>
-          {databaseTables.length === 0 ? (
-            <div className="text-sm text-gray-500">{t('database.noTablesFound')}</div>
-          ) : (
-            <div className="space-y-1">
-              {databaseTables.map((table, index) => (
-                <div
-                  key={index}
-                  className={`p-1.5 text-xs hover:bg-gray-100 cursor-pointer rounded ${selectedTable && selectedTable.name === table.name && selectedTable.schema === table.schema ? 'bg-blue-100' : ''}`}
-                  onClick={() => loadTableData(table)}
-                >
-                  <span className="text-gray-500">{table.schema}.</span>
-                  <span>{table.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <QuerySidebar
+        querySessions={querySessions}
+        activeSessionId={activeSessionId}
+        onSessionSelect={setActiveSessionId}
+        onCreateNewSession={createNewSession}
+        databaseTables={databaseTables}
+        selectedTable={selectedTable}
+        onTableSelect={loadTableData}
+      />
 
       {/* Right Content Area - With Max Width */}
       <div className="flex-1 flex flex-col h-full">
@@ -737,249 +701,26 @@ const Query: React.FC<QueryProps> = () => {
             </div>
           </div>
 
-          {/* Filter Controls */}
-          {(tableData || queryResult) && (
-            <div className="p-2 border-b border-gray-200 bg-gray-100">
-              <div className="flex gap-2 items-center mb-2">
-                <span className="text-xs font-medium">{t('query.filters')}:</span>
-                <Button size="xs" color="light" onClick={addFilter} outline>
-                  {t('query.addFilter')}
-                </Button>
-                {filterConfigs.length > 0 && (
-                  <Button size="xs" color="gray" onClick={clearAllFilters}>
-                    {t('query.clearAll')}
-                  </Button>
-                )}
-              </div>
-
-              {filterConfigs.length === 0 ? (
-                <div className="text-xs text-gray-500">{t('query.noFiltersApplied')}</div>
-              ) : (
-                <div className="space-y-2">
-                  {filterConfigs.map((filter, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <Select
-                        sizing="sm"
-                        value={filter.column}
-                        onChange={e => updateFilter(index, { column: e.target.value })}
-                      >
-                        <option value="">{t('query.selectColumn')}</option>
-                        {(filteredAndSortedData || tableData || queryResult)?.columns.map(
-                          (column, colIndex) => (
-                            <option key={colIndex} value={column}>
-                              {column}
-                            </option>
-                          )
-                        )}
-                      </Select>
-                      <input
-                        type="text"
-                        placeholder={t('query.filterValue')}
-                        className="text-xs border border-gray-300 rounded px-2 py-1 flex-1 max-w-xs"
-                        value={filter.value}
-                        onChange={e => updateFilter(index, { value: e.target.value })}
-                        disabled={!filter.column}
-                      />
-                      <Button size="xs" color="failure" onClick={() => removeFilter(index)}>
-                        {t('common.remove')}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Query Results */}
-          <div className="flex-1 p-3 overflow-auto max-w-4xl">
-            {/* Show table data when a table is selected */}
-            {filteredAndSortedData && selectedTable ? (
-              <div className="max-w-4xl">
-                <h3 className="text-sm font-semibold mb-2">
-                  {selectedTable.schema}.{selectedTable.name}
-                  {isLoadingTableData && (
-                    <span className="ml-2 text-xs text-gray-500">({t('common.loading')}...)</span>
-                  )}
-                  {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
-                    <span className="ml-2 text-xs text-blue-600">
-                      ({filterConfigs.filter(f => f.column && f.value).length} filter
-                      {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''}{' '}
-                      applied)
-                    </span>
-                  )}
-                </h3>
-
-                {filteredAndSortedData.rows.length === 0 ? (
-                  <div className="text-sm text-gray-500">
-                    {filterConfigs.some(f => f.column && f.value)
-                      ? t('query.noDataMatchesFilters')
-                      : t('query.tableHasNoData')}
-                  </div>
-                ) : (
-                  <>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs text-left text-gray-700">
-                        <thead className="text-xs text-gray-700 bg-gray-50">
-                          <tr>
-                            {filteredAndSortedData.columns.map((column, index) => (
-                              <th
-                                key={index}
-                                className="px-4 py-2 cursor-pointer hover:bg-gray-100 select-none"
-                                onClick={() => handleSort(column)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>{column}</span>
-                                  <span className="ml-1">
-                                    {sortConfig?.column === column
-                                      ? sortConfig.direction === 'asc'
-                                        ? '↑'
-                                        : '↓'
-                                      : '↕'}
-                                  </span>
-                                </div>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredAndSortedData.rows.map((row, rowIndex) => (
-                            <tr key={rowIndex} className="border-b hover:bg-gray-50">
-                              {row.map((cell, cellIndex) => (
-                                <td key={cellIndex} className="px-4 py-2">
-                                  {cell === null ? t('common.null') : String(cell)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex justify-between items-center mt-4 text-xs">
-                      <div>
-                        {t('query.showingRows', { count: filteredAndSortedData.rows.length })}
-                        {filterConfigs.some(f => f.column && f.value) && tableData && (
-                          <span className="ml-2 text-gray-500">
-                            ({t('query.filteredFromTotal', { total: tableData.rows.length })})
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="xs"
-                          disabled={pagination.page === 1 || isLoadingTableData}
-                          onClick={() =>
-                            loadTableData(selectedTable, pagination.page - 1, pagination.pageSize)
-                          }
-                        >
-                          {t('common.previous')}
-                        </Button>
-                        <span>
-                          {t('common.page')} {pagination.page}
-                        </span>
-                        <Button
-                          size="xs"
-                          disabled={
-                            (tableData && tableData.rows.length < pagination.pageSize) ||
-                            isLoadingTableData
-                          }
-                          onClick={() =>
-                            loadTableData(selectedTable, pagination.page + 1, pagination.pageSize)
-                          }
-                        >
-                          {t('common.next')}
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : isExecuting ? (
-              <div className="flex justify-center items-center h-full">
-                <div className="text-center">
-                  <div className="spinner mb-2"></div>
-                  <div className="text-sm text-gray-500">{t('query.executingQuery')}...</div>
-                </div>
-              </div>
-            ) : queryResult ? (
-              <div>
-                <h3 className="text-sm font-semibold mb-2">
-                  {t('query.queryResults')}
-                  {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
-                    <span className="ml-2 text-xs text-blue-600">
-                      ({filterConfigs.filter(f => f.column && f.value).length} filter
-                      {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''}{' '}
-                      applied)
-                    </span>
-                  )}
-                  {sortConfig && (
-                    <span className="ml-2 text-xs text-green-600">
-                      ({t('query.sortedBy')} {sortConfig.column} {sortConfig.direction})
-                    </span>
-                  )}
-                </h3>
-                {(() => {
-                  const processedResult = applyFilterAndSort(queryResult);
-                  return processedResult.rows.length === 0 ? (
-                    <div className="text-sm text-gray-500">
-                      {filterConfigs.some(f => f.column && f.value)
-                        ? t('query.noResultsMatchFilters')
-                        : t('query.noResultsFound')}
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs text-left text-gray-700">
-                        <thead className="text-xs text-gray-700 bg-gray-50">
-                          <tr>
-                            {processedResult.columns.map((column, index) => (
-                              <th
-                                key={index}
-                                className="px-4 py-2 cursor-pointer hover:bg-gray-100 select-none"
-                                onClick={() => handleSort(column)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>{column}</span>
-                                  <span className="ml-1">
-                                    {sortConfig?.column === column
-                                      ? sortConfig.direction === 'asc'
-                                        ? '↑'
-                                        : '↓'
-                                      : '↕'}
-                                  </span>
-                                </div>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {processedResult.rows.map((row, rowIndex) => (
-                            <tr key={rowIndex} className="border-b hover:bg-gray-50">
-                              {row.map((cell, cellIndex) => (
-                                <td key={cellIndex} className="px-4 py-2">
-                                  {cell === null ? t('common.null') : String(cell)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      <div className="mt-4 text-xs text-gray-500">
-                        {t('query.showingRows', { count: processedResult.rows.length })}
-                        {filterConfigs.some(f => f.column && f.value) && (
-                          <span className="ml-2">
-                            ({t('query.filteredFromTotal', { total: queryResult.rows.length })})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            ) : (
-              <div className="text-sm text-gray-500">{t('query.enterQueryInstructions')}</div>
-            )}
-          </div>
+          <QueryResults
+            selectedTable={selectedTable}
+            tableData={tableData}
+            filteredAndSortedData={filteredAndSortedData}
+            isLoadingTableData={isLoadingTableData}
+            queryResult={queryResult}
+            isExecuting={isExecuting}
+            sortConfig={sortConfig}
+            filterConfigs={filterConfigs}
+            onSort={handleSort}
+            onAddFilter={addFilter}
+            onUpdateFilter={updateFilter}
+            onRemoveFilter={removeFilter}
+            onClearAllFilters={clearAllFilters}
+            applyFilterAndSort={applyFilterAndSort}
+            pagination={pagination}
+            onLoadTableData={(table, page, pageSize) =>
+              table && loadTableData(table, page, pageSize)
+            }
+          />
         </div>
       </div>
 

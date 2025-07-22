@@ -8,18 +8,18 @@ import dbService, {
   TableDataRequest,
   QueryResult,
   DBService,
-} from '../services/DBService';
-import { aiService } from '../services/AIService';
-import QuerySidebar from '../components/query/QuerySidebar';
-import QueryResults from '../components/query/QueryResults';
-import QueryToolbar from '../components/query/QueryToolbar';
-import SQLConfirmationModal from '../components/query/SQLConfirmationModal';
+} from '../../services/DBService';
+import { aiService } from '../../services/AIService';
+import QuerySidebar from './components/QuerySidebar';
+import QueryResults from './components/QueryResults';
+import QueryToolbar from './components/QueryToolbar';
+import SQLConfirmationModal from './components/SQLConfirmationModal';
 import {
   sqlStatementHighlight,
   getCurrentSqlStatement,
   getCurrentLineStatement,
-} from '../utils/queryUtils';
-import { useTableFiltering, useProcessedData } from '../hooks/useTableFiltering';
+} from './queryUtils';
+import { useTableFiltering, useProcessedData } from './useTableFiltering';
 
 interface QuerySession {
   id: string;

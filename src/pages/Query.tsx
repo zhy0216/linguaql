@@ -15,6 +15,7 @@ import dbService, {
 import { aiService } from '../services/AIService';
 import QuerySidebar from '../components/query/QuerySidebar';
 import QueryResults from '../components/query/QueryResults';
+import SQLConfirmationModal from '../components/query/SQLConfirmationModal';
 
 interface QuerySession {
   id: string;
@@ -724,47 +725,12 @@ const Query: React.FC<QueryProps> = () => {
         </div>
       </div>
 
-      {/* SQL Confirmation Modal */}
-      {showSQLConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {t('query.confirmSQLExecution')}
-              </h3>
-              <button onClick={cancelSQLExecution} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-3">{t('query.aiGeneratedSQLWarning')}</p>
-
-              <div className="bg-gray-50 border rounded-md p-3">
-                <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
-                  {generatedSQL}
-                </pre>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button color="gray" onClick={cancelSQLExecution}>
-                {t('common.cancel')}
-              </Button>
-              <Button color="failure" onClick={executeConfirmedSQL}>
-                {t('query.executeAnyway')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SQLConfirmationModal
+        isOpen={showSQLConfirmModal}
+        generatedSQL={generatedSQL}
+        onConfirm={executeConfirmedSQL}
+        onCancel={cancelSQLExecution}
+      />
     </div>
   );
 };

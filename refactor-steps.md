@@ -114,13 +114,13 @@ Refactoring the large Query.tsx component (1000+ lines) into smaller, maintainab
 - [x] Update Query.tsx to use QueryResults
 - [x] Test results display
 
-### Step 2.4: Extract Modal Components
+### Step 2.4: Extract Modal Components ✅ **COMPLETED**
 
-- [ ] Create `src/components/query/SQLConfirmationModal.tsx`
-- [ ] Move SQL confirmation modal structure
-- [ ] Include modal state management
-- [ ] Update Query.tsx to use modal component
-- [ ] Test modal functionality
+- [x] Create `src/components/query/SQLConfirmationModal.tsx`
+- [x] Move SQL confirmation modal structure
+- [x] Include modal state management
+- [x] Update Query.tsx to use modal component
+- [x] Test modal functionality
 
 ---
 
@@ -243,10 +243,11 @@ After each phase, verify:
 - [x] Planning and documentation
 - [x] **Step 2.1**: Extract Sidebar Components (QuerySidebar, SessionsList, DatabaseTablesList)
 - [x] **Step 2.3**: Extract Results Display Component (QueryResults, ResultsTable, FilterControls)
+- [x] **Step 2.4**: Extract Modal Components (SQLConfirmationModal)
 
 ### Current Step
 
-- [ ] **Next**: Continue with remaining Phase 2 steps (Step 2.2, 2.4) or move to Phase 1 hooks
+- [ ] **Next**: Continue with Step 2.2 (Query Input) or move to Phase 1 (Custom Hooks)
 
 ### Notes
 

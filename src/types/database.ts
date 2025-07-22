@@ -16,3 +16,10 @@ export interface ConnectionResult {
   success: boolean;
   message: string;
 }
+
+export interface TableColumnInfo {
+  column_name: string;
+  data_type: string;
+  is_nullable: string; // 'YES' or 'NO'
+  column_default: string | null;
+}

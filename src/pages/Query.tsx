@@ -405,17 +405,20 @@ const Query: React.FC<QueryProps> = () => {
           const tableSchemas = await Promise.all(
             databaseTables.map(async table => {
               const columns = await dbService.getTableColumns(table.schema, table.name);
+              // console.log("columns:", columns);
               return {
                 name: table.name,
                 columns: columns.map(col => ({
-                  name: col.name,
-                  type: col.type,
-                  nullable: col.nullable,
-                  primary_key: col.primary_key,
+                  name: col.column_name,
+                  type: col.data_type,
+                  nullable: col.is_nullable === 'YES',
+                  default: col.column_default,
                 })),
               };
             })
           );
+
+          console.log('tableSchemas:', tableSchemas);
 
           // Generate SQL using AI service
           const aiGeneratedSQL = await aiService.convertToSQL(queryToExecute, tableSchemas);

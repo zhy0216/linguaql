@@ -1,5 +1,5 @@
 import Database from '@tauri-apps/plugin-sql';
-import { DatabaseConfig, ConnectionResult } from '../types/database';
+import { DatabaseConfig, ConnectionResult, TableColumnInfo } from '../types/database';
 import { Parser } from 'node-sql-parser';
 
 export interface DatabaseTable {
@@ -328,7 +328,7 @@ export class DBService {
   /**
    * 获取表的列信息
    */
-  async getTableColumns(schema: string, tableName: string): Promise<any[]> {
+  async getTableColumns(schema: string, tableName: string): Promise<TableColumnInfo[]> {
     try {
       const db = await this.getConnection();
 
@@ -347,7 +347,8 @@ export class DBService {
           ordinal_position
       `;
 
-      const result = (await db.select(query, [schema, tableName])) as any[];
+      const result = (await db.select(query, [schema, tableName])) as TableColumnInfo[];
+      console.log('result:', result);
       return result;
     } catch (error) {
       console.error('Failed to get table columns:', error);

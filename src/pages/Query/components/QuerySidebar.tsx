@@ -2,12 +2,7 @@ import React from 'react';
 import SessionsList from './SessionsList';
 import DatabaseTablesList from './DatabaseTablesList';
 import { DatabaseTable } from '@/services/DBService';
-
-interface QuerySession {
-  id: string;
-  name: string;
-  createdAt: string;
-}
+import { QuerySession } from '../../../stores/querySessionStore';
 
 interface QuerySidebarProps {
   // Sessions props
@@ -15,6 +10,7 @@ interface QuerySidebarProps {
   activeSessionId: string | null;
   onSessionSelect: (sessionId: string) => void;
   onCreateNewSession: () => void;
+  onDeleteSession?: (sessionId: string) => void;
 
   // Database tables props
   databaseTables: DatabaseTable[];
@@ -27,6 +23,7 @@ const QuerySidebar: React.FC<QuerySidebarProps> = ({
   activeSessionId,
   onSessionSelect,
   onCreateNewSession,
+  onDeleteSession,
   databaseTables,
   selectedTable,
   onTableSelect,
@@ -38,6 +35,7 @@ const QuerySidebar: React.FC<QuerySidebarProps> = ({
         activeSessionId={activeSessionId}
         onSessionSelect={onSessionSelect}
         onCreateNewSession={onCreateNewSession}
+        onDeleteSession={onDeleteSession}
       />
       <DatabaseTablesList
         databaseTables={databaseTables}

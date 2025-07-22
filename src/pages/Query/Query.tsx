@@ -10,6 +10,8 @@ import dbService, {
   DBService,
 } from '../../services/DBService';
 import { aiService } from '../../services/AIService';
+import { useQuerySessionStore } from '../../stores/querySessionStore';
+import { useServerConfigStore } from '../../stores/serverConfigStore';
 import QuerySidebar from './components/QuerySidebar';
 import QueryResults from './components/QueryResults';
 import QueryToolbar from './components/QueryToolbar';
@@ -21,12 +23,6 @@ import {
 } from './queryUtils';
 import { useTableFiltering, useProcessedData } from './useTableFiltering';
 
-interface QuerySession {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
 interface QueryProps {}
 
 const Query: React.FC<QueryProps> = () => {
@@ -34,9 +30,23 @@ const Query: React.FC<QueryProps> = () => {
   // CodeMirror ref for dynamic query extraction
   const codeMirrorRef = useRef<ReactCodeMirrorRef>(null);
 
-  // State for managing query sessions
-  const [querySessions, setQuerySessions] = useState<QuerySession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  // Get current server info
+  const { selectedServerId } = useServerConfigStore();
+
+  // Query session management
+  const {
+    getSessionsForServer,
+    getActiveSessionForServer,
+    createSession,
+    updateSession,
+    setActiveSession,
+    deleteSession,
+  } = useQuerySessionStore();
+
+  // Get sessions for current server
+  const querySessions = selectedServerId ? getSessionsForServer(selectedServerId) : [];
+  const activeSession = selectedServerId ? getActiveSessionForServer(selectedServerId) : null;
+  const activeSessionId = activeSession?.id || null;
 
   // State for database tables
   const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([]);
@@ -76,40 +86,59 @@ const Query: React.FC<QueryProps> = () => {
 
   // Initialize with a default session on component mount
   useEffect(() => {
-    const savedSessions = localStorage.getItem('linguaql-query-sessions');
-    if (savedSessions) {
-      const sessions = JSON.parse(savedSessions);
-      setQuerySessions(sessions);
-      if (sessions.length > 0) {
-        setActiveSessionId(sessions[0].id);
+    if (selectedServerId) {
+      // Check if there are existing sessions for this server
+      const existingSessions = getSessionsForServer(selectedServerId);
+      if (existingSessions.length === 0) {
+        // Create a default session for this server
+        createNewSession();
       }
-    } else {
-      createNewSession();
     }
 
     // Fetch database tables
     fetchDatabaseTables();
-  }, []);
+  }, [selectedServerId]);
 
-  // Save sessions to localStorage when they change
+  // Update query input and result when active session changes
   useEffect(() => {
-    if (querySessions.length > 0) {
-      localStorage.setItem('linguaql-query-sessions', JSON.stringify(querySessions));
+    if (activeSession) {
+      setQueryInput(activeSession.queryInput);
+      setQueryResult(activeSession.queryResult);
+      setQueryHistory(activeSession.queryHistory);
+    } else {
+      setQueryInput('');
+      setQueryResult(null);
+      setQueryHistory([]);
     }
-  }, [querySessions]);
+  }, [activeSession]);
 
   // Create a new query session
   const createNewSession = () => {
-    const newSession: QuerySession = {
-      id: Date.now().toString(),
-      name: `${t('query.querySession')} ${querySessions.length + 1}`,
-      createdAt: new Date().toISOString(),
-    };
+    if (!selectedServerId) return;
 
-    setQuerySessions([...querySessions, newSession]);
-    setActiveSessionId(newSession.id);
+    createSession(selectedServerId);
     setQueryInput('');
     setQueryResult(null);
+  };
+
+  // Handle session selection
+  const handleSessionSelect = (sessionId: string) => {
+    if (!selectedServerId) return;
+    setActiveSession(selectedServerId, sessionId);
+  };
+
+  // Update session when query input changes
+  const handleQueryInputChange = (value: string) => {
+    setQueryInput(value);
+    if (activeSessionId) {
+      updateSession(activeSessionId, { queryInput: value });
+    }
+  };
+
+  // Handle session deletion
+  const handleDeleteSession = (sessionId: string) => {
+    if (querySessions.length <= 1) return; // Don't delete the last session
+    deleteSession(sessionId);
   };
 
   // Fetch database tables
@@ -286,19 +315,39 @@ const Query: React.FC<QueryProps> = () => {
     try {
       const result = await dbService.executeQuery(sql);
 
-      setQueryResult({
+      const queryResult = {
         columns: result.columns,
         rows: result.rows,
-      });
+      };
+
+      setQueryResult(queryResult);
 
       // Add to history
-      setQueryHistory(prev => [sql, ...prev].slice(0, 20)); // Keep last 20 queries
+      const newHistory = [sql, ...queryHistory].slice(0, 20); // Keep last 20 queries
+      setQueryHistory(newHistory);
+
+      // Update session with result and history
+      if (activeSessionId) {
+        updateSession(activeSessionId, {
+          queryResult,
+          queryHistory: newHistory,
+        });
+      }
     } catch (error: unknown) {
       console.error('Failed to execute validated SQL:', error);
-      setQueryResult({
+      const errorResult = {
         columns: ['Execution Error'],
         rows: [[error instanceof Error ? error.message : String(error)]],
-      });
+      };
+
+      setQueryResult(errorResult);
+
+      // Update session with error result
+      if (activeSessionId) {
+        updateSession(activeSessionId, {
+          queryResult: errorResult,
+        });
+      }
     } finally {
       setIsExecuting(false);
     }
@@ -335,8 +384,9 @@ const Query: React.FC<QueryProps> = () => {
       <QuerySidebar
         querySessions={querySessions}
         activeSessionId={activeSessionId}
-        onSessionSelect={setActiveSessionId}
+        onSessionSelect={handleSessionSelect}
         onCreateNewSession={createNewSession}
+        onDeleteSession={handleDeleteSession}
         databaseTables={databaseTables}
         selectedTable={selectedTable}
         onTableSelect={loadTableData}
@@ -351,7 +401,7 @@ const Query: React.FC<QueryProps> = () => {
               <CodeMirror
                 ref={codeMirrorRef}
                 value={queryInput}
-                onChange={value => setQueryInput(value)}
+                onChange={handleQueryInputChange}
                 extensions={[sql(), sqlStatementHighlight]}
                 placeholder={t('query.enterQuery')}
                 theme="light"

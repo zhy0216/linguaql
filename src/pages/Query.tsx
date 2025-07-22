@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from 'flowbite-react';
+import { Button, Select } from 'flowbite-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { StateField } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
 import { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
-import dbService, { DatabaseTable, TableDataRequest, QueryResult } from '../services/DBService';
+import dbService, {
+  DatabaseTable,
+  TableDataRequest,
+  QueryResult,
+  DBService,
+} from '../services/DBService';
 import { aiService } from '../services/AIService';
 
 interface QuerySession {
@@ -416,7 +421,7 @@ const Query: React.FC<QueryProps> = () => {
           const aiGeneratedSQL = await aiService.convertToSQL(queryToExecute, tableSchemas);
 
           // Step 2: Check if generated SQL is safe
-          if ((dbService.constructor as any).isSafeSQL(aiGeneratedSQL)) {
+          if (DBService.isSafeSQL(aiGeneratedSQL)) {
             // Safe SQL - execute directly
             finalSQL = aiGeneratedSQL;
             await executeValidatedSQL(finalSQL);
@@ -732,7 +737,7 @@ const Query: React.FC<QueryProps> = () => {
             <div className="p-2 border-b border-gray-200 bg-gray-100">
               <div className="flex gap-2 items-center mb-2">
                 <span className="text-xs font-medium">Filters:</span>
-                <Button size="xs" color="blue" onClick={addFilter}>
+                <Button size="xs" color="light" onClick={addFilter} outline>
                   Add Filter
                 </Button>
                 {filterConfigs.length > 0 && (
@@ -748,8 +753,8 @@ const Query: React.FC<QueryProps> = () => {
                 <div className="space-y-2">
                   {filterConfigs.map((filter, index) => (
                     <div key={index} className="flex gap-2 items-center">
-                      <select
-                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                      <Select
+                        sizing="sm"
                         value={filter.column}
                         onChange={e => updateFilter(index, { column: e.target.value })}
                       >
@@ -761,7 +766,7 @@ const Query: React.FC<QueryProps> = () => {
                             </option>
                           )
                         )}
-                      </select>
+                      </Select>
                       <input
                         type="text"
                         placeholder="Filter value"
@@ -975,7 +980,7 @@ const Query: React.FC<QueryProps> = () => {
 
       {/* SQL Confirmation Modal */}
       {showSQLConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Confirm SQL Execution</h3>

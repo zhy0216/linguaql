@@ -21,14 +21,14 @@ export interface QueryResult {
   error?: string;
 }
 
-class DBService {
+export class DBService {
   private connection: Database | null = null;
 
   static dbConfigToUrl(config: DatabaseConfig): string {
     return `postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`;
   }
 
-  static isValidSQL(sql: string): boolean {
+  public static isValidSQL(sql: string): boolean {
     if (!sql || typeof sql !== 'string') {
       return false;
     }
@@ -90,7 +90,7 @@ class DBService {
     }
   }
 
-  static isSafeSQL(sql: string): boolean {
+  public static isSafeSQL(sql: string): boolean {
     if (!sql || typeof sql !== 'string') {
       return false;
     }

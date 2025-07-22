@@ -1,5 +1,6 @@
 import Database from '@tauri-apps/plugin-sql';
 import { DatabaseConfig, ConnectionResult } from '../types/database';
+import { Parser } from 'node-sql-parser';
 
 export interface DatabaseTable {
   name: string;
@@ -26,6 +27,188 @@ class DBService {
   static dbConfigToUrl(config: DatabaseConfig): string {
     return `postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`;
   }
+
+  static isValidSQL(sql: string): boolean {
+    if (!sql || typeof sql !== 'string') {
+      return false;
+    }
+
+    const trimmedSql = sql.trim();
+    if (trimmedSql.length === 0) {
+      return false;
+    }
+
+    try {
+      // Create parser instance with PostgreSQL dialect
+      const parser = new Parser();
+
+      // Parse the SQL - this will throw an error if invalid
+      const ast = parser.astify(trimmedSql, {
+        database: 'postgresql',
+      });
+
+      // Additional validation: ensure we have a valid AST
+      if (!ast) {
+        return false;
+      }
+
+      // Check for common SQL statement types
+      const validStatementTypes = [
+        'select',
+        'insert',
+        'update',
+        'delete',
+        'create',
+        'alter',
+        'drop',
+        'truncate',
+        'with',
+        'union',
+        'intersect',
+        'except',
+      ];
+
+      // Handle both single statements and arrays of statements
+      const statements = Array.isArray(ast) ? ast : [ast];
+
+      for (const statement of statements) {
+        if (!statement || !statement.type) {
+          return false;
+        }
+
+        const statementType = statement.type.toLowerCase();
+        if (!validStatementTypes.includes(statementType)) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      // If parsing fails, the SQL is invalid
+      console.debug('SQL validation failed:', error);
+      return false;
+    }
+  }
+
+  static isSafeSQL(sql: string): boolean {
+    if (!sql || typeof sql !== 'string') {
+      return false;
+    }
+
+    const trimmedSql = sql.trim().toLowerCase();
+    if (trimmedSql.length === 0) {
+      return false;
+    }
+
+    // First check if the SQL is syntactically valid
+    if (!this.isValidSQL(sql)) {
+      return false;
+    }
+
+    try {
+      const parser = new Parser();
+      const ast = parser.astify(sql, {
+        database: 'postgresql',
+      });
+
+      const statements = Array.isArray(ast) ? ast : [ast];
+
+      for (const statement of statements) {
+        const statementType = statement.type.toLowerCase();
+
+        // Allow only safe read-only operations
+        const safeStatements = ['select', 'with'];
+
+        // All data modification and system operations are dangerous
+        const dangerousStatements = [
+          // Data modification operations
+          'insert',
+          'update',
+          'delete',
+          // Schema modification operations
+          'drop',
+          'truncate',
+          'alter',
+          'create',
+          // Permission and transaction operations
+          'grant',
+          'revoke',
+          'commit',
+          'rollback',
+          // System operations
+          'set',
+          'reset',
+          'show',
+          'explain',
+          'analyze',
+          'vacuum',
+          'reindex',
+        ];
+
+        // Block dangerous statements immediately
+        if (dangerousStatements.includes(statementType)) {
+          console.warn(`Blocked dangerous SQL statement: ${statementType}`);
+          return false;
+        }
+
+        // Allow only safe read-only statements
+        if (safeStatements.includes(statementType)) {
+          // Still check for suspicious patterns even in SELECT statements
+          if (this.containsSuspiciousPatterns(sql)) {
+            return false;
+          }
+          continue;
+        }
+
+        // Block all other statement types (including data modification)
+        console.warn(`Blocked unsafe statement type: ${statementType}`);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.debug('SQL safety check failed:', error);
+      return false;
+    }
+  }
+
+  private static containsSuspiciousPatterns(sql: string): boolean {
+    const suspiciousPatterns = [
+      // SQL injection patterns
+      /;\s*(drop|truncate|alter|delete|update)\s+/i,
+      /union\s+select/i,
+      /\bor\s+1\s*=\s*1\b/i,
+      /\band\s+1\s*=\s*1\b/i,
+      /\bor\s+'.*'\s*=\s*'.*'/i,
+      /\band\s+'.*'\s*=\s*'.*'/i,
+      // System function calls
+      /\b(pg_|information_schema|pg_catalog)/i,
+      // File operations
+      /\b(copy|\\copy)\s+/i,
+      // Multiple statements (basic check)
+      /;\s*\w+/,
+      // Comments that might hide malicious code
+      /\/\*.*\*\//s,
+      /--.*$/m,
+    ];
+
+    for (const pattern of suspiciousPatterns) {
+      if (pattern.test(sql)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  async connect(config: DatabaseConfig): Promise<Database> {
+    try {
+      const db = await Database.load(DBService.dbConfigToUrl(config));
+      return db;
+    } catch (error) {
+      throw new Error(`Failed to connect to database: ${error}`);
+    }
+  }
   /**
    * 获取数据库连接
    */
@@ -35,14 +218,12 @@ class DBService {
       return this.connection;
     }
 
-    // 从后端获取连接URL
-    try {
-      const db = await Database.load(config ? DBService.dbConfigToUrl(config) : '');
-      this.connection = db;
-      return db;
-    } catch (error) {
-      throw new Error(`Failed to get database connection: ${error}`);
+    if (!config) {
+      throw new Error(`need to connect to database first`);
     }
+
+    this.connection = await this.connect(config);
+    return this.connection;
   }
 
   /**

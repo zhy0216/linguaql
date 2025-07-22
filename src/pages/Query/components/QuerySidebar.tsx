@@ -1,7 +1,7 @@
 import React from 'react';
 import SessionsList from './SessionsList';
 import DatabaseTablesList from './DatabaseTablesList';
-import { DatabaseTable } from '../../services/DBService';
+import { DatabaseTable } from '@/services/DBService';
 
 interface QuerySession {
   id: string;

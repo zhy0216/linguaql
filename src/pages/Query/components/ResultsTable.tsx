@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { QueryResult } from '../../services/DBService';
+import { QueryResult } from '@/services/DBService';
 
 interface SortConfig {
   column: string;

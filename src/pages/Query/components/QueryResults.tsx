@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from 'flowbite-react';
 import ResultsTable from './ResultsTable';
 import FilterControls from './FilterControls';
-import { QueryResult, DatabaseTable } from '../../services/DBService';
+import { QueryResult, DatabaseTable } from '@/services/DBService';
 
 interface SortConfig {
   column: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { QueryResult } from '../services/DBService';
+import { QueryResult } from '@/services/DBService';
 
 export interface SortConfig {
   column: string;

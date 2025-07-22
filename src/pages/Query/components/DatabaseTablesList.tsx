@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { DatabaseTable } from '../../services/DBService';
+import { DatabaseTable } from '@/services/DBService';
 
 interface DatabaseTablesListProps {
   databaseTables: DatabaseTable[];

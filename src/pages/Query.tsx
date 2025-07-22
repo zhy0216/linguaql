@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from 'flowbite-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { StateField } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
+import { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import dbService, { DatabaseTable, TableDataRequest, QueryResult } from '../services/DBService';
 
@@ -40,9 +41,20 @@ const sqlStatementHighlight = StateField.define<DecorationSet>({
       return Decoration.none;
     }
 
-    const cursorPos = tr.selection.main.head;
+    let cursorPos = tr.selection.main.head;
     const doc = tr.state.doc;
     const text = doc.toString();
+
+    // Special handling: if cursor is after semicolon and rest of line is empty
+    if (cursorPos > 0 && text[cursorPos - 1] === ';') {
+      const currentLine = doc.lineAt(cursorPos);
+      const cursorPosInLine = cursorPos - currentLine.from;
+
+      if (currentLine.text.slice(cursorPosInLine).trim() === '') {
+        // Move cursor position back to highlight the previous statement
+        cursorPos = cursorPos - 1;
+      }
+    }
 
     // Find the current SQL statement boundaries
     let statementStart = 0;
@@ -100,6 +112,9 @@ const sqlStatementHighlight = StateField.define<DecorationSet>({
 });
 
 const Query: React.FC<QueryProps> = () => {
+  // CodeMirror ref for dynamic query extraction
+  const codeMirrorRef = useRef<ReactCodeMirrorRef>(null);
+
   // State for managing query sessions
   const [querySessions, setQuerySessions] = useState<QuerySession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -221,15 +236,150 @@ const Query: React.FC<QueryProps> = () => {
     }
   };
 
+  // Get SQL statement boundaries for current cursor position
+  const getCurrentSqlStatement = (text: string, cursorPos: number): string => {
+    // Find the current SQL statement boundaries
+    let statementStart = 0;
+    let statementEnd = text.length;
+
+    // Find the previous semicolon (statement start)
+    for (let i = cursorPos - 1; i >= 0; i--) {
+      if (text[i] === ';') {
+        statementStart = i + 1;
+        break;
+      }
+    }
+
+    // Find the next semicolon (statement end)
+    for (let i = cursorPos; i < text.length; i++) {
+      if (text[i] === ';') {
+        statementEnd = i;
+        break;
+      }
+    }
+
+    // Extract and trim the statement
+    return text.slice(statementStart, statementEnd).trim();
+  };
+
+  // Get SQL statement from current line (search forward then backward)
+  const getCurrentLineStatement = (text: string, cursorPos: number): string => {
+    const lines = text.split('\n');
+    let currentPos = 0;
+    let currentLineIndex = 0;
+
+    // Find which line the cursor is on
+    for (let i = 0; i < lines.length; i++) {
+      const lineLength = lines[i].length + 1; // +1 for newline
+      if (currentPos + lineLength > cursorPos) {
+        currentLineIndex = i;
+        break;
+      }
+      currentPos += lineLength;
+    }
+
+    const currentLine = lines[currentLineIndex];
+    if (!currentLine.trim()) {
+      return ''; // Empty line
+    }
+
+    // Special handling: if cursor is after semicolon and rest of line is empty
+    const cursorPosInLine = cursorPos - currentPos;
+    if (
+      cursorPosInLine > 0 &&
+      currentLine[cursorPosInLine - 1] === ';' &&
+      currentLine.slice(cursorPosInLine).trim() === ''
+    ) {
+      // Use the previous statement instead
+      return getCurrentSqlStatement(text, cursorPos - 1);
+    }
+
+    // Start from current line and search forward for semicolon
+    let statementEnd = text.length;
+    let searchPos = currentPos; // Start of current line in full text
+
+    for (let i = currentLineIndex; i < lines.length; i++) {
+      const line = lines[i];
+      const semicolonIndex = line.indexOf(';');
+
+      if (semicolonIndex !== -1) {
+        // Found semicolon, calculate position in full text
+        statementEnd = searchPos + semicolonIndex;
+        break;
+      }
+
+      searchPos += line.length + 1; // +1 for newline
+    }
+
+    // Search backward from current line for statement start
+    let statementStart = 0;
+    searchPos = currentPos; // Start of current line
+
+    for (let i = currentLineIndex - 1; i >= 0; i--) {
+      const line = lines[i];
+      searchPos -= line.length + 1; // Move to start of previous line
+
+      const semicolonIndex = line.lastIndexOf(';');
+      if (semicolonIndex !== -1) {
+        // Found semicolon, statement starts after it
+        statementStart = searchPos + semicolonIndex + 1;
+        break;
+      }
+    }
+
+    // Extract and trim the statement
+    return text.slice(statementStart, statementEnd).trim();
+  };
+
+  // Dynamic query extraction with priority
+  const getQueryToExecute = (): string => {
+    const editor = codeMirrorRef.current;
+    if (!editor || !editor.view) {
+      return queryInput; // Fallback to state
+    }
+
+    const view = editor.view;
+    const doc = view.state.doc;
+    const text = doc.toString();
+    const selection = view.state.selection.main;
+
+    // Priority 1: If there's a selection, use it
+    if (!selection.empty) {
+      const selectedText = text.slice(selection.from, selection.to).trim();
+      if (selectedText) {
+        return selectedText;
+      }
+    }
+
+    // Priority 2: Get current SQL statement based on cursor position (full statement detection)
+    const cursorPos = selection.head;
+    const currentStatement = getCurrentSqlStatement(text, cursorPos);
+    if (currentStatement) {
+      return currentStatement;
+    }
+
+    // Priority 3: Get statement from current line (search forward then backward)
+    const currentLineStatement = getCurrentLineStatement(text, cursorPos);
+    if (currentLineStatement) {
+      return currentLineStatement;
+    }
+
+    // Priority 4: Use entire content
+    return text.trim();
+  };
+
   // Execute query
   const executeQuery = async () => {
-    if (!queryInput.trim()) return;
+    const queryToExecute = getQueryToExecute();
+    console.log('queryToExecute', queryToExecute);
+
+    if (!queryToExecute) return;
 
     setIsExecuting(true);
     setQueryResult(null);
 
     try {
-      const result = await dbService.executeQuery(queryInput);
+      const result = await dbService.executeQuery(queryToExecute);
 
       setQueryResult({
         columns: result.columns,
@@ -237,7 +387,7 @@ const Query: React.FC<QueryProps> = () => {
       });
 
       // Add to history
-      setQueryHistory(prev => [queryInput, ...prev].slice(0, 20)); // Keep last 20 queries
+      setQueryHistory(prev => [queryToExecute, ...prev].slice(0, 20)); // Keep last 20 queries
     } catch (error: unknown) {
       console.error('Failed to execute query:', error);
       setQueryResult({
@@ -416,9 +566,9 @@ const Query: React.FC<QueryProps> = () => {
           <div className="p-3 border-b border-gray-200">
             <div className="border border-gray-300 rounded overflow-hidden">
               <CodeMirror
+                ref={codeMirrorRef}
                 value={queryInput}
                 onChange={value => setQueryInput(value)}
-                onStatistics={data => console.log(data)}
                 extensions={[sql(), sqlStatementHighlight]}
                 placeholder="Enter your SQL query here..."
                 theme="light"

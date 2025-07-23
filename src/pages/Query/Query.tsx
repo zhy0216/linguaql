@@ -441,8 +441,6 @@ const Query: React.FC<QueryProps> = () => {
                       highlightActiveLine: false,
                     }}
                     style={{
-                      height: '210px',
-                      overflowY: 'auto',
                       fontSize: '14px',
                       fontFamily:
                         'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',

@@ -12,3 +12,9 @@
 .cm-sql-statement-highlight-bg {
   background-color: aliceblue;
 }
+
+.cm-scroller {
+  overflow-y: auto;
+  min-height: 210px;
+  max-height: 210px;
+}

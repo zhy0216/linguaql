@@ -36,22 +36,19 @@ export const sqlStatementHighlight = [
       try {
         const startCoords = view.coordsAtPos(startPos);
         const endCoords = view.coordsAtPos(endPos);
-        console.log(
-          '#### startCoords, endCoords, startPos, endPos',
-          startCoords,
-          endCoords,
-          startPos,
-          endPos
-        );
+
         if (startCoords && endCoords) {
+          // Account for scroll position - coordinates are relative to viewport
+          const scrollTop = view.scrollDOM.scrollTop;
+
           // Create a rectangle marker that spans the statement
           markers.push(
             new RectangleMarker(
               'cm-sql-statement-highlight-bg',
               0,
-              startCoords.top - 22,
+              startCoords.top + scrollTop - 15,
               view.contentDOM.offsetWidth + 40,
-              endCoords.bottom - startCoords.top + 20
+              endCoords.bottom - startCoords.top + 4
             )
           );
         }

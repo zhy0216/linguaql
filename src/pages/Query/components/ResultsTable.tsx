@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from 'flowbite-react';
 import { QueryResult } from '@/services/DBService';
 
 interface SortConfig {
@@ -69,13 +70,13 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         className="overflow-x-auto overflow-y-scroll"
         style={{ maxHeight: maxHeight || 'calc(100vh - 350px)' }}
       >
-        <table className="w-full text-xs text-left text-gray-700">
-          <thead className="text-xs text-gray-700 bg-gray-50">
-            <tr>
+        <Table hoverable className="text-xs">
+          <TableHead>
+            <TableRow>
               {data.columns.map((column, index) => (
-                <th
+                <TableHeadCell
                   key={index}
-                  className="px-4 py-2 cursor-pointer hover:bg-gray-100 select-none"
+                  className="cursor-pointer select-none bg-gray-50 text-xs"
                   onClick={() => onSort(column)}
                 >
                   <div className="flex items-center justify-between">
@@ -88,22 +89,22 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                         : '↕'}
                     </span>
                   </div>
-                </th>
+                </TableHeadCell>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHead>
+          <TableBody className="divide-y">
             {data.rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="border-b hover:bg-gray-50">
+              <TableRow key={rowIndex} className="bg-white dark:border-gray-700 dark:bg-gray-800">
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="px-4 py-2">
+                  <TableCell key={cellIndex} className="px-4 py-2 text-xs">
                     {cell === null ? t('common.null') : String(cell)}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
       {showingRowCount && (
         <div className="mt-4 text-xs text-gray-500">

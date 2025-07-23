@@ -143,6 +143,8 @@
     "english": "English",
     "chinese": "中文",
     "openRouterInfo": "OpenRouter 通过单一 API 提供多个 AI 模型的访问。您可以在此使用 OpenRouter API 密钥，或配置不同的 OpenAI 兼容端点。",
+    "getApiKeyLink": "在 openrouter.ai 获取您的 API 密钥 →",
+    "aboutOpenRouter": "关于 OpenRouter",
     "showApiKey": "显示 API 密钥",
     "hideApiKey": "隐藏 API 密钥",
     "configurePreferences": "配置您的应用程序偏好",

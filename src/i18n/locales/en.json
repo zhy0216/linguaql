@@ -142,6 +142,8 @@
     "english": "English",
     "chinese": "中文",
     "openRouterInfo": "OpenRouter provides access to multiple AI models through a single API. You can use your OpenRouter API key here, or configure a different OpenAI-compatible endpoint.",
+    "getApiKeyLink": "Get your API key at openrouter.ai →",
+    "aboutOpenRouter": "About OpenRouter",
     "showApiKey": "Show API Key",
     "hideApiKey": "Hide API Key",
     "configurePreferences": "Configure your application preferences",

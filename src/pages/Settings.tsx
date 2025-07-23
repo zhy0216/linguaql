@@ -23,12 +23,6 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
   const [sqlConfig, setSqlConfig] = useState(getSQLValidationConfig());
 
-  const handleReset = () => {
-    resetOpenAIConfig();
-    resetSQLValidationConfig();
-    setSqlConfig(getSQLValidationConfig());
-  };
-
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
     updateLanguage(language);
@@ -65,12 +59,6 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={handleReset}
-              className="px-4 py-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
-            >
-              {t('settings.resetSettings')}
-            </button>
-            <button
               onClick={onBack}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
@@ -104,8 +92,14 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
         {/* OpenAI Configuration Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">{t('settings.openaiConfig')}</h2>
+            <button
+              onClick={resetOpenAIConfig}
+              className="px-4 py-2 text-sm  text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
+            >
+              {t('settings.resetSettings')}
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -215,6 +209,38 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               />
             </div>
           </div>
+          {/* Info Card */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">
+                  {t('settings.aboutOpenRouter')}
+                </h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>{t('settings.openRouterInfo')}</p>
+                  <p className="mt-2">
+                    <a
+                      href="https://openrouter.ai"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium underline hover:text-blue-600"
+                    >
+                      {t('settings.getApiKeyLink')}
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* SQL Statement Types Configuration Card */}
@@ -228,9 +254,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 resetSQLValidationConfig();
                 setSqlConfig(getSQLValidationConfig());
               }}
-              className="px-3 py-1 text-sm text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded transition-colors border border-orange-200"
+              className="px-4 py-2 rounded-lg text-sm text-orange-600 hover:text-orange-800 hover:bg-orange-50 transition-colors border border-orange-200"
             >
-              {t('settings.resetToDefault')}
+              {t('settings.resetSettings')}
             </button>
           </div>
 
@@ -269,37 +295,6 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Info Card */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">About OpenRouter</h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>{t('settings.openRouterInfo')}</p>
-                <p className="mt-2">
-                  <a
-                    href="https://openrouter.ai"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium underline hover:text-blue-600"
-                  >
-                    Get your API key at openrouter.ai →
-                  </a>
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

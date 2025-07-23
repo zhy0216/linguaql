@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ResultsTable from './ResultsTable';
 import { QueryResult } from '@/services/DBService';
@@ -20,10 +20,6 @@ interface QueryResultsViewProps {
   queryResult: QueryResult | null;
   isExecuting: boolean;
 
-  // Sorting (no filtering in query results mode)
-  sortConfig: SortConfig | null;
-  onSort: (column: string) => void;
-
   // Pagination (if needed for large query results) - currently not used
   // pagination?: Pagination;
 }
@@ -31,11 +27,77 @@ interface QueryResultsViewProps {
 const QueryResultsView: React.FC<QueryResultsViewProps> = ({
   queryResult,
   isExecuting,
-  sortConfig,
-  onSort,
   // pagination, // Not used currently
 }) => {
   const { t } = useTranslation();
+
+  // Internal sorting state
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+
+  // Handle sorting internally
+  const handleSort = (column: string) => {
+    setSortConfig(prevConfig => {
+      if (prevConfig?.column === column) {
+        // Toggle direction if same column
+        return {
+          column,
+          direction: prevConfig.direction === 'asc' ? 'desc' : 'asc',
+        };
+      } else {
+        // New column, default to ascending
+        return {
+          column,
+          direction: 'asc',
+        };
+      }
+    });
+  };
+
+  // Sort the query result data
+  const sortedQueryResult = useMemo(() => {
+    if (!queryResult || !sortConfig) {
+      return queryResult;
+    }
+
+    const columnIndex = queryResult.columns.indexOf(sortConfig.column);
+    if (columnIndex === -1) {
+      return queryResult;
+    }
+
+    const sortedRows = [...queryResult.rows].sort((a, b) => {
+      const aValue = a[columnIndex];
+      const bValue = b[columnIndex];
+
+      // Handle null values
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+
+      // Try to parse as numbers for numeric sorting
+      const aNum = Number(aValue);
+      const bNum = Number(bValue);
+
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        // Numeric comparison
+        return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      } else {
+        // String comparison
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+
+        if (sortConfig.direction === 'asc') {
+          return aStr.localeCompare(bStr);
+        } else {
+          return bStr.localeCompare(aStr);
+        }
+      }
+    });
+
+    return {
+      ...queryResult,
+      rows: sortedRows,
+    };
+  }, [queryResult, sortConfig]);
 
   return (
     <div className="flex-1 flex flex-col h-full">
@@ -46,10 +108,10 @@ const QueryResultsView: React.FC<QueryResultsViewProps> = ({
           {queryResult && (
             <div>
               <ResultsTable
-                data={queryResult}
+                data={sortedQueryResult!}
                 sortConfig={sortConfig}
                 filterConfigs={[]}
-                onSort={onSort}
+                onSort={handleSort}
                 showFilterInfo={false}
                 showingRowCount={true}
               />

@@ -489,12 +489,7 @@ const Query: React.FC<QueryProps> = () => {
 
           {/* Query Results Mode - Show query execution results */}
           {activeSessionId && !selectedTable && (
-            <QueryResultsView
-              queryResult={queryResult}
-              isExecuting={isExecuting}
-              sortConfig={sortConfig}
-              onSort={handleSort}
-            />
+            <QueryResultsView queryResult={queryResult} isExecuting={isExecuting} />
           )}
         </div>
       </div>

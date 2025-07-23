@@ -1,1 +1,7 @@
-[ ] sql 的 安全检查的setting
+[ ] json view
+[ ] pagination xs
+[ ] make logo
+[ ] read me
+[ ] release
+[ ] query time (先不做)
+[ ] history

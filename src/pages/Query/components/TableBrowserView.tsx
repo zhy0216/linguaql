@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'flowbite-react';
 import ResultsTable from './ResultsTable';
 import FilterControls from './FilterControls';
 import { QueryResult, DatabaseTable } from '@/services/DBService';
@@ -36,17 +35,13 @@ interface Pagination {
   total?: number;
 }
 
-interface QueryResultsProps {
+interface TableBrowserViewProps {
   // Table data display
-  selectedTable: DatabaseTable | null;
+  selectedTable: DatabaseTable;
   tableData: QueryResult | null;
   filteredAndSortedData: QueryResult | null;
   isLoadingTableData: boolean;
-  currentTableColumnInfos?: TableColumnInfo[]; // 新增：当前表的列信息
-
-  // Query results display
-  queryResult: QueryResult | null;
-  isExecuting: boolean;
+  currentTableColumnInfos?: TableColumnInfo[];
 
   // Filtering and sorting
   sortConfig: SortConfig | null;
@@ -63,13 +58,12 @@ interface QueryResultsProps {
   onLoadTableData: (table: DatabaseTable | null, page?: number, pageSize?: number) => void;
 }
 
-const QueryResults: React.FC<QueryResultsProps> = ({
+const TableBrowserView: React.FC<TableBrowserViewProps> = ({
   selectedTable,
   tableData,
   filteredAndSortedData,
   isLoadingTableData,
-  queryResult,
-  isExecuting,
+  currentTableColumnInfos,
   sortConfig,
   filterConfigs,
   onSort,
@@ -77,23 +71,23 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   onUpdateFilter,
   onRemoveFilter,
   onClearAllFilters,
-  applyFilterAndSort,
-  pagination,
-  onLoadTableData,
+  // applyFilterAndSort, // Not used directly in this component
+  // pagination, // Not used with current ResultsTable interface
+  // onLoadTableData, // Not used with current ResultsTable interface
 }) => {
   const { t } = useTranslation();
 
   // Get available columns for filtering
   const getAvailableColumns = () => {
-    const data = filteredAndSortedData || tableData || queryResult;
+    const data = filteredAndSortedData || tableData;
     return data?.columns || [];
   };
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <div className="flex-1 flex flex-col ">
-        {/* Filter Controls - only show when we have data to filter */}
-        {/* {(filteredAndSortedData || queryResult) && (
+      <div className="flex-1 flex flex-col">
+        {/* Filter Controls - Always show in table browser mode */}
+        {(filteredAndSortedData || tableData) && (
           <FilterControls
             filterConfigs={filterConfigs}
             availableColumns={getAvailableColumns()}
@@ -103,12 +97,11 @@ const QueryResults: React.FC<QueryResultsProps> = ({
             onRemoveFilter={onRemoveFilter}
             onClearAllFilters={onClearAllFilters}
           />
-        )} */}
+        )}
 
-        {/* Results Display */}
-        <div className="flex-1 p-3 overflow-auto ">
-          {/* Show table data when a table is selected */}
-          {filteredAndSortedData && selectedTable ? (
+        {/* Table Display */}
+        <div className="flex-1 p-3 overflow-auto">
+          {filteredAndSortedData && (
             <div>
               <h3 className="text-sm font-semibold mb-2">
                 {selectedTable.schema}.{selectedTable.name}
@@ -122,7 +115,6 @@ const QueryResults: React.FC<QueryResultsProps> = ({
                   </span>
                 )}
               </h3>
-
               <ResultsTable
                 data={filteredAndSortedData}
                 sortConfig={sortConfig}
@@ -132,34 +124,20 @@ const QueryResults: React.FC<QueryResultsProps> = ({
                 originalRowCount={tableData?.rows.length}
               />
             </div>
-          ) : isExecuting ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="text-center">
-                <div className="spinner mb-2"></div>
-                <div className="text-sm text-gray-500">{t('query.executingQuery')}...</div>
-              </div>
+          )}
+
+          {/* Loading State */}
+          {isLoadingTableData && !filteredAndSortedData && (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-gray-500">{t('common.loading')}...</div>
             </div>
-          ) : queryResult ? (
-            <div>
-              <h3 className="text-sm font-semibold mb-2">
-                {t('query.queryResults')}
-                {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
-                  <span className="ml-2 text-xs text-blue-600">
-                    ({filterConfigs.filter(f => f.column && f.value).length} filter
-                    {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
-                  </span>
-                )}
-              </h3>
-              <ResultsTable
-                data={applyFilterAndSort(queryResult)}
-                sortConfig={sortConfig}
-                filterConfigs={filterConfigs}
-                onSort={onSort}
-                originalRowCount={queryResult.rows.length}
-              />
+          )}
+
+          {/* No Data State */}
+          {!isLoadingTableData && !filteredAndSortedData && (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-gray-500">{t('query.noData')}</div>
             </div>
-          ) : (
-            <div className="text-sm text-gray-500">{t('query.enterQueryInstructions')}</div>
           )}
         </div>
       </div>
@@ -167,4 +145,4 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   );
 };
 
-export default QueryResults;
+export default TableBrowserView;

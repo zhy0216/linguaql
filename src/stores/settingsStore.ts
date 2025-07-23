@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import {
-  SettingsConfig,
-  OpenAIConfig,
-  LanguageConfig,
-  SQLValidationConfig,
-  SQLStatementType,
-} from '../types/config';
+import { SettingsConfig, OpenAIConfig, LanguageConfig, SQLValidationConfig } from '../types/config';
 import i18n from '../i18n';
 
 interface SettingsState {

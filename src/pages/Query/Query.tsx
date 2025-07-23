@@ -14,7 +14,8 @@ import { aiService } from '../../services/AIService';
 import { useQuerySessionStore } from '../../stores/querySessionStore';
 import { useServerConfigStore } from '../../stores/serverConfigStore';
 import QuerySidebar from './components/QuerySidebar';
-import QueryResults from './components/QueryResults';
+import TableBrowserView from './components/TableBrowserView';
+import QueryResultsView from './components/QueryResultsView';
 import QueryToolbar from './components/QueryToolbar';
 import SQLConfirmationModal from './components/SQLConfirmationModal';
 import {
@@ -127,6 +128,9 @@ const Query: React.FC<QueryProps> = () => {
   const handleSessionSelect = (sessionId: string) => {
     if (!selectedServerId) return;
     setActiveSession(selectedServerId, sessionId);
+    // Clear selected table when selecting a session
+    setSelectedTable(null);
+    setTableData(null);
   };
 
   // Update session when query input changes
@@ -162,6 +166,11 @@ const Query: React.FC<QueryProps> = () => {
   // Load table data with pagination when a table is clicked
   const loadTableData = async (table: DatabaseTable, page: number = 1, pageSize: number = 100) => {
     if (!table) return;
+
+    // Clear active session when selecting a table
+    if (selectedServerId && activeSessionId) {
+      setActiveSession(selectedServerId, null);
+    }
 
     setSelectedTable(table);
     setIsLoadingTableData(true);
@@ -409,73 +418,89 @@ const Query: React.FC<QueryProps> = () => {
       {/* Right Content Area - With Max Width */}
       <div className="flex-1 flex flex-col h-full">
         <div className="flex-1 flex flex-col  mx-auto w-full">
-          {/* Query Input */}
-          <div className="p-3 border-b border-gray-200">
-            <div className="border border-gray-300 rounded overflow-hidden">
-              <CodeMirror
-                ref={codeMirrorRef}
-                value={queryInput}
-                onChange={handleQueryInputChange}
-                extensions={[sql(), sqlStatementHighlight]}
-                placeholder={t('query.enterQuery')}
-                theme="light"
-                basicSetup={{
-                  lineNumbers: true,
-                  foldGutter: true,
-                  dropCursor: false,
-                  allowMultipleSelections: false,
-                  indentOnInput: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  autocompletion: false,
-                  highlightSelectionMatches: false,
-                  // highlightActiveLineGutter: true,
-                  highlightActiveLine: false,
-                }}
-                style={{
-                  height: '210px',
-                  overflowY: 'auto',
-                  fontSize: '14px',
-                  fontFamily:
-                    'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                }}
+          {/* Query Session Mode - Show Query Editor and Toolbar */}
+          {activeSessionId && !selectedTable && (
+            <>
+              {/* Query Input */}
+              <div className="p-3 border-b border-gray-200">
+                <div className="border border-gray-300 rounded overflow-hidden">
+                  <CodeMirror
+                    ref={codeMirrorRef}
+                    value={queryInput}
+                    onChange={handleQueryInputChange}
+                    extensions={[sql(), sqlStatementHighlight]}
+                    placeholder={t('query.enterQuery')}
+                    theme="light"
+                    basicSetup={{
+                      lineNumbers: true,
+                      foldGutter: true,
+                      dropCursor: false,
+                      allowMultipleSelections: false,
+                      indentOnInput: true,
+                      bracketMatching: true,
+                      closeBrackets: true,
+                      autocompletion: false,
+                      highlightSelectionMatches: false,
+                      // highlightActiveLineGutter: true,
+                      highlightActiveLine: false,
+                    }}
+                    style={{
+                      height: '210px',
+                      overflowY: 'auto',
+                      fontSize: '14px',
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Toolbar */}
+              <QueryToolbar
+                showHistory={showHistory}
+                setShowHistory={setShowHistory}
+                queryHistory={queryHistory}
+                selectHistoryQuery={selectHistoryQuery}
+                cancelQuery={cancelQuery}
+                executeQuery={executeQuery}
+                isExecuting={isExecuting}
+                queryInput={queryInput}
               />
-            </div>
-          </div>
+            </>
+          )}
 
-          {/* Toolbar */}
-          <QueryToolbar
-            showHistory={showHistory}
-            setShowHistory={setShowHistory}
-            queryHistory={queryHistory}
-            selectHistoryQuery={selectHistoryQuery}
-            cancelQuery={cancelQuery}
-            executeQuery={executeQuery}
-            isExecuting={isExecuting}
-            queryInput={queryInput}
-          />
+          {/* Table Browser Mode - Show table data with filters */}
+          {selectedTable && !activeSessionId && (
+            <TableBrowserView
+              selectedTable={selectedTable}
+              tableData={tableData}
+              filteredAndSortedData={filteredAndSortedData}
+              isLoadingTableData={isLoadingTableData}
+              currentTableColumnInfos={currentTableColumnInfos}
+              sortConfig={sortConfig}
+              filterConfigs={filterConfigs}
+              onSort={handleSort}
+              onAddFilter={addFilter}
+              onUpdateFilter={updateFilter}
+              onRemoveFilter={removeFilter}
+              onClearAllFilters={clearAllFilters}
+              applyFilterAndSort={applyFilterAndSort}
+              pagination={pagination}
+              onLoadTableData={(table: DatabaseTable | null, page?: number, pageSize?: number) =>
+                table && loadTableData(table, page, pageSize)
+              }
+            />
+          )}
 
-          <QueryResults
-            selectedTable={selectedTable}
-            tableData={tableData}
-            filteredAndSortedData={filteredAndSortedData}
-            isLoadingTableData={isLoadingTableData}
-            currentTableColumnInfos={currentTableColumnInfos}
-            queryResult={queryResult}
-            isExecuting={isExecuting}
-            sortConfig={sortConfig}
-            filterConfigs={filterConfigs}
-            onSort={handleSort}
-            onAddFilter={addFilter}
-            onUpdateFilter={updateFilter}
-            onRemoveFilter={removeFilter}
-            onClearAllFilters={clearAllFilters}
-            applyFilterAndSort={applyFilterAndSort}
-            pagination={pagination}
-            onLoadTableData={(table, page, pageSize) =>
-              table && loadTableData(table, page, pageSize)
-            }
-          />
+          {/* Query Results Mode - Show query execution results */}
+          {activeSessionId && !selectedTable && (
+            <QueryResultsView
+              queryResult={queryResult}
+              isExecuting={isExecuting}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
+          )}
         </div>
       </div>
 

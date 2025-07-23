@@ -402,7 +402,7 @@ const Query: React.FC<QueryProps> = () => {
 
       {/* Right Content Area - With Max Width */}
       <div className="flex-1 flex flex-col h-full">
-        <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+        <div className="flex-1 flex flex-col  mx-auto w-full">
           {/* Query Input */}
           <div className="p-3 border-b border-gray-200">
             <div className="border border-gray-300 rounded overflow-hidden">
@@ -427,7 +427,8 @@ const Query: React.FC<QueryProps> = () => {
                   highlightActiveLine: false,
                 }}
                 style={{
-                  minHeight: '200px',
+                  height: '210px',
+                  overflowY: 'auto',
                   fontSize: '14px',
                   fontFamily:
                     'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',

@@ -209,6 +209,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
       const result = await dbService.testDatabaseConnection(newConfig);
       if (result.success) {
         // Connection successful, navigate to query page
+        await getCurrentWindow().setSize(new LogicalSize(1200, 600));
         onDatabaseConnected();
       } else {
         // Show connection error

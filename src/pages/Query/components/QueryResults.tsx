@@ -92,9 +92,9 @@ const QueryResults: React.FC<QueryResultsProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+      <div className="flex-1 flex flex-col ">
         {/* Filter Controls - only show when we have data to filter */}
-        {(filteredAndSortedData || queryResult) && (
+        {/* {(filteredAndSortedData || queryResult) && (
           <FilterControls
             filterConfigs={filterConfigs}
             availableColumns={getAvailableColumns()}
@@ -104,13 +104,13 @@ const QueryResults: React.FC<QueryResultsProps> = ({
             onRemoveFilter={onRemoveFilter}
             onClearAllFilters={onClearAllFilters}
           />
-        )}
+        )} */}
 
         {/* Results Display */}
-        <div className="flex-1 p-3 overflow-auto max-w-4xl">
+        <div className="flex-1 p-3 overflow-auto ">
           {/* Show table data when a table is selected */}
           {filteredAndSortedData && selectedTable ? (
-            <div className="max-w-4xl">
+            <div>
               <h3 className="text-sm font-semibold mb-2">
                 {selectedTable.schema}.{selectedTable.name}
                 {isLoadingTableData && (
@@ -188,11 +188,6 @@ const QueryResults: React.FC<QueryResultsProps> = ({
                   <span className="ml-2 text-xs text-blue-600">
                     ({filterConfigs.filter(f => f.column && f.value).length} filter
                     {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
-                  </span>
-                )}
-                {sortConfig && (
-                  <span className="ml-2 text-xs text-green-600">
-                    ({t('query.sortedBy')} {sortConfig.column} {sortConfig.direction})
                   </span>
                 )}
               </h3>

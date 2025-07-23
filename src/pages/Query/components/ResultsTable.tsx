@@ -61,7 +61,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 
   return (
     <div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 370px)' }}>
         <table className="w-full text-xs text-left text-gray-700">
           <thead className="text-xs text-gray-700 bg-gray-50">
             <tr>

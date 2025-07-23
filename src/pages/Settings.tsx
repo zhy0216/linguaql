@@ -11,32 +11,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const { t } = useTranslation();
   const { settings, updateOpenAIConfig, resetOpenAIConfig, updateLanguage, getLanguage } =
     useSettingsStore();
-  const [localConfig, setLocalConfig] = useState(settings.openai);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      updateOpenAIConfig(localConfig);
-      // Show success message briefly
-      setTimeout(() => {
-        setIsSaving(false);
-      }, 500);
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      setIsSaving(false);
-    }
-  };
 
   const handleReset = () => {
     resetOpenAIConfig();
-    setLocalConfig({
-      apiKey: '',
-      baseUrl: 'https://openrouter.ai/api/v1',
-      model: 'qwen/qwen-turbo',
-    });
   };
 
   const handleLanguageChange = (language: string) => {
@@ -45,10 +24,11 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   };
 
   const handleInputChange = (field: keyof OpenAIConfig, value: string) => {
-    setLocalConfig((prev: OpenAIConfig) => ({
-      ...prev,
+    const newConfig = {
+      ...settings.openai,
       [field]: value,
-    }));
+    };
+    updateOpenAIConfig(newConfig);
   };
 
   const commonModels = [
@@ -67,12 +47,20 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
             <h1 className="text-3xl font-bold text-gray-900">{t('settings.settings')}</h1>
             <p className="text-gray-600 mt-1">{t('settings.configurePreferences')}</p>
           </div>
-          <button
-            onClick={onBack}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            ← {t('common.back')}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleReset}
+              className="px-4 py-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
+            >
+              {t('settings.resetSettings')}
+            </button>
+            <button
+              onClick={onBack}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              ← {t('common.back')}
+            </button>
+          </div>
         </div>
 
         {/* Language Configuration Card */}
@@ -113,7 +101,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               <div className="relative">
                 <input
                   type={showApiKey ? 'text' : 'password'}
-                  value={localConfig.apiKey}
+                  value={settings.openai.apiKey}
                   onChange={e => handleInputChange('apiKey', e.target.value)}
                   placeholder="Enter your OpenAI API key"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
@@ -159,7 +147,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               </label>
               <input
                 type="url"
-                value={localConfig.baseUrl}
+                value={settings.openai.baseUrl}
                 onChange={e => handleInputChange('baseUrl', e.target.value)}
                 placeholder="https://openrouter.ai/api/v1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -174,7 +162,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               </label>
               <div className="relative">
                 <select
-                  value={localConfig.model}
+                  value={settings.openai.model}
                   onChange={e => handleInputChange('model', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                 >
@@ -204,33 +192,12 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               </label>
               <input
                 type="text"
-                value={commonModels.includes(localConfig.model) ? '' : localConfig.model}
+                value={commonModels.includes(settings.openai.model) ? '' : settings.openai.model}
                 onChange={e => handleInputChange('model', e.target.value)}
                 placeholder="Enter custom model name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              {t('settings.resetSettings')}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                isSaving
-                  ? 'bg-green-500 text-white cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              {isSaving ? `✓ ${t('settings.settingsSaved')}` : t('settings.saveSettings')}
-            </button>
           </div>
         </div>
 

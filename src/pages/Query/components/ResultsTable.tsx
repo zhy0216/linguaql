@@ -7,8 +7,22 @@ interface SortConfig {
   direction: 'asc' | 'desc';
 }
 
+export type FilterOperator =
+  | 'equals'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'notEquals'
+  | 'isEmpty'
+  | 'isNotEmpty';
+
 interface FilterConfig {
   column: string;
+  operator: FilterOperator;
   value: string;
 }
 

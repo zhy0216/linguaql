@@ -9,6 +9,7 @@ import dbService, {
   QueryResult,
   DBService,
 } from '../../services/DBService';
+import { TableColumnInfo } from '../../types/database';
 import { aiService } from '../../services/AIService';
 import { useQuerySessionStore } from '../../stores/querySessionStore';
 import { useServerConfigStore } from '../../stores/serverConfigStore';
@@ -68,6 +69,7 @@ const Query: React.FC<QueryProps> = () => {
 
   // State for table data
   const [tableData, setTableData] = useState<QueryResult | null>(null);
+  const [currentTableColumnInfos, setCurrentTableColumnInfos] = useState<TableColumnInfo[]>([]);
   const [isLoadingTableData, setIsLoadingTableData] = useState(false);
 
   // State for query input and results
@@ -169,14 +171,20 @@ const Query: React.FC<QueryProps> = () => {
         pageSize: pageSize,
       };
 
-      // Use DBService to get table data
-      const result = await dbService.getTableData(request);
+      // Get table data and column information in parallel
+      const [result, columnInfos] = await Promise.all([
+        dbService.getTableData(request),
+        dbService.getTableColumns(table.schema, table.name),
+      ]);
 
       // Extract column names from the first row
       const columns = result.length > 0 ? Object.keys(result[0]) : [];
 
       // Convert rows to array format expected by QueryResult
       const rows = result.map((row: any) => columns.map(col => row[col]));
+
+      // Store column information for filtering
+      setCurrentTableColumnInfos(columnInfos);
 
       setTableData({
         columns,
@@ -445,6 +453,7 @@ const Query: React.FC<QueryProps> = () => {
             tableData={tableData}
             filteredAndSortedData={filteredAndSortedData}
             isLoadingTableData={isLoadingTableData}
+            currentTableColumnInfos={currentTableColumnInfos}
             queryResult={queryResult}
             isExecuting={isExecuting}
             sortConfig={sortConfig}

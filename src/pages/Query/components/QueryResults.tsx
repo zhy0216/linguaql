@@ -4,14 +4,29 @@ import { Button } from 'flowbite-react';
 import ResultsTable from './ResultsTable';
 import FilterControls from './FilterControls';
 import { QueryResult, DatabaseTable } from '@/services/DBService';
+import { TableColumnInfo } from '../../../types/database';
 
 interface SortConfig {
   column: string;
   direction: 'asc' | 'desc';
 }
 
+export type FilterOperator =
+  | 'equals'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'notEquals'
+  | 'isEmpty'
+  | 'isNotEmpty';
+
 interface FilterConfig {
   column: string;
+  operator: FilterOperator;
   value: string;
 }
 
@@ -27,6 +42,7 @@ interface QueryResultsProps {
   tableData: QueryResult | null;
   filteredAndSortedData: QueryResult | null;
   isLoadingTableData: boolean;
+  currentTableColumnInfos?: TableColumnInfo[]; // 新增：当前表的列信息
 
   // Query results display
   queryResult: QueryResult | null;
@@ -52,6 +68,7 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   tableData,
   filteredAndSortedData,
   isLoadingTableData,
+  currentTableColumnInfos,
   queryResult,
   isExecuting,
   sortConfig,
@@ -81,6 +98,7 @@ const QueryResults: React.FC<QueryResultsProps> = ({
           <FilterControls
             filterConfigs={filterConfigs}
             availableColumns={getAvailableColumns()}
+            columnInfos={currentTableColumnInfos}
             onAddFilter={onAddFilter}
             onUpdateFilter={onUpdateFilter}
             onRemoveFilter={onRemoveFilter}

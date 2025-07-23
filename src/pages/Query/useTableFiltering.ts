@@ -6,8 +6,22 @@ export interface SortConfig {
   direction: 'asc' | 'desc';
 }
 
+export type FilterOperator =
+  | 'equals'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'notEquals'
+  | 'isEmpty'
+  | 'isNotEmpty';
+
 export interface FilterConfig {
   column: string;
+  operator: FilterOperator;
   value: string;
 }
 
@@ -40,6 +54,78 @@ export interface UseTableFilteringReturn {
   hasActiveFilters: boolean;
   activeFilterCount: number;
 }
+
+// Helper function to apply filter operations
+const applyFilterOperation = (
+  cellValue: any,
+  operator: FilterOperator,
+  filterValue: string
+): boolean => {
+  if (operator === 'isEmpty') {
+    return cellValue === null || cellValue === undefined || String(cellValue).trim() === '';
+  }
+
+  if (operator === 'isNotEmpty') {
+    return cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '';
+  }
+
+  if (cellValue === null || cellValue === undefined) {
+    return false;
+  }
+
+  const cellStr = String(cellValue);
+  const filterStr = filterValue;
+
+  switch (operator) {
+    case 'equals':
+      return cellStr.toLowerCase() === filterStr.toLowerCase();
+    case 'contains':
+      return cellStr.toLowerCase().includes(filterStr.toLowerCase());
+    case 'startsWith':
+      return cellStr.toLowerCase().startsWith(filterStr.toLowerCase());
+    case 'endsWith':
+      return cellStr.toLowerCase().endsWith(filterStr.toLowerCase());
+    case 'notEquals':
+      return cellStr.toLowerCase() !== filterStr.toLowerCase();
+    case 'gt':
+    case 'gte':
+    case 'lt':
+    case 'lte': {
+      // Try numeric comparison first
+      const cellNum = Number(cellValue);
+      const filterNum = Number(filterValue);
+
+      if (!isNaN(cellNum) && !isNaN(filterNum)) {
+        switch (operator) {
+          case 'gt':
+            return cellNum > filterNum;
+          case 'gte':
+            return cellNum >= filterNum;
+          case 'lt':
+            return cellNum < filterNum;
+          case 'lte':
+            return cellNum <= filterNum;
+        }
+      }
+
+      // Fallback to string comparison
+      const comparison = cellStr.localeCompare(filterStr);
+      switch (operator) {
+        case 'gt':
+          return comparison > 0;
+        case 'gte':
+          return comparison >= 0;
+        case 'lt':
+          return comparison < 0;
+        case 'lte':
+          return comparison <= 0;
+      }
+      return false;
+    }
+    default:
+      return true;
+  }
+};
 
 export const useTableFiltering = ({
   initialPageSize = 100,
@@ -75,15 +161,17 @@ export const useTableFiltering = ({
 
       // Apply filtering - support multiple filters
       filterConfigs.forEach(filterConfig => {
-        if (filterConfig.column && filterConfig.value) {
+        if (
+          filterConfig.column &&
+          (filterConfig.value ||
+            filterConfig.operator === 'isEmpty' ||
+            filterConfig.operator === 'isNotEmpty')
+        ) {
           const columnIndex = data.columns.indexOf(filterConfig.column);
           if (columnIndex !== -1) {
             processedData.rows = processedData.rows.filter(row => {
               const cellValue = row[columnIndex];
-              return (
-                cellValue !== null &&
-                String(cellValue).toLowerCase().includes(filterConfig.value.toLowerCase())
-              );
+              return applyFilterOperation(cellValue, filterConfig.operator, filterConfig.value);
             });
           }
         }
@@ -127,7 +215,7 @@ export const useTableFiltering = ({
 
   // Add a new filter
   const addFilter = useCallback(() => {
-    setFilterConfigs(prev => [...prev, { column: '', value: '' }]);
+    setFilterConfigs(prev => [...prev, { column: '', operator: 'contains', value: '' }]);
   }, []);
 
   // Update a specific filter
@@ -151,8 +239,16 @@ export const useTableFiltering = ({
   }, []);
 
   // Computed values
-  const hasActiveFilters = filterConfigs.some(filter => filter.column && filter.value);
-  const activeFilterCount = filterConfigs.filter(filter => filter.column && filter.value).length;
+  const hasActiveFilters = filterConfigs.some(
+    filter =>
+      filter.column &&
+      (filter.value || filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty')
+  );
+  const activeFilterCount = filterConfigs.filter(
+    filter =>
+      filter.column &&
+      (filter.value || filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty')
+  ).length;
 
   return {
     // State

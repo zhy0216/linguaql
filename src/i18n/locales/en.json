@@ -110,6 +110,7 @@
     "tableHasNoData": "Table has no data",
     "showingRows": "Showing {{count}} rows",
     "filteredFromTotal": "filtered from {{total}} total",
+    "showingRowsRange": "Showing {{start}}-{{end}} of {{total}} total rows",
     "executingQuery": "Executing query",
     "queryResults": "Query Results",
     "sortedBy": "Sorted by",

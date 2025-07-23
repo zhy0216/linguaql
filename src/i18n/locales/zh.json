@@ -111,6 +111,7 @@
     "tableHasNoData": "表中无数据",
     "showingRows": "显示 {{count}} 行",
     "filteredFromTotal": "从总共 {{total}} 行中筛选",
+    "showingRowsRange": "显示第 {{start}}-{{end}} 行，共 {{total}} 行",
     "executingQuery": "正在执行查询",
     "queryResults": "查询结果",
     "sortedBy": "按以下排序",

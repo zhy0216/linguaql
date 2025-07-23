@@ -33,6 +33,8 @@ interface ResultsTableProps {
   onSort: (column: string) => void;
   showFilterInfo?: boolean;
   originalRowCount?: number;
+  showingRowCount?: boolean;
+  maxHeight?: string;
 }
 
 const ResultsTable: React.FC<ResultsTableProps> = ({
@@ -42,6 +44,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   onSort,
   showFilterInfo = false,
   originalRowCount,
+  showingRowCount,
+  maxHeight,
 }) => {
   const { t } = useTranslation();
 
@@ -61,7 +65,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 
   return (
     <div>
-      <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 370px)' }}>
+      <div
+        className="overflow-x-auto overflow-y-scroll"
+        style={{ maxHeight: maxHeight || 'calc(100vh - 350px)' }}
+      >
         <table className="w-full text-xs text-left text-gray-700">
           <thead className="text-xs text-gray-700 bg-gray-50">
             <tr>
@@ -98,14 +105,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           </tbody>
         </table>
       </div>
-      <div className="mt-4 text-xs text-gray-500">
-        {t('query.showingRows', { count: data.rows.length })}
-        {filterConfigs.some(f => f.column && f.value) && originalRowCount && (
-          <span className="ml-2">
-            ({t('query.filteredFromTotal', { total: originalRowCount })})
-          </span>
-        )}
-      </div>
+      {showingRowCount && (
+        <div className="mt-4 text-xs text-gray-500">
+          {t('query.showingRows', { count: data.rows.length })}
+          {filterConfigs.some(f => f.column && f.value) && originalRowCount && (
+            <span className="ml-2">
+              ({t('query.filteredFromTotal', { total: originalRowCount })})
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

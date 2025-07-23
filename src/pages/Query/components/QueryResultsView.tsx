@@ -45,18 +45,13 @@ const QueryResultsView: React.FC<QueryResultsViewProps> = ({
           {/* Show query results */}
           {queryResult && (
             <div>
-              <h3 className="text-sm font-semibold mb-2">
-                {t('query.queryResults')}
-                <span className="ml-2 text-xs text-gray-600">
-                  ({queryResult.rows.length} {queryResult.rows.length === 1 ? 'row' : 'rows'})
-                </span>
-              </h3>
               <ResultsTable
                 data={queryResult}
                 sortConfig={sortConfig}
                 filterConfigs={[]}
                 onSort={onSort}
                 showFilterInfo={false}
+                showingRowCount={true}
               />
             </div>
           )}

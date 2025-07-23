@@ -122,6 +122,8 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
                 onSort={onSort}
                 showFilterInfo={true}
                 originalRowCount={tableData?.rows.length}
+                showingRowCount={true}
+                maxHeight="calc(100vh - 160px)"
               />
             </div>
           )}

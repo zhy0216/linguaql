@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Select } from 'flowbite-react';
+import { Button, Select, TextInput } from 'flowbite-react';
 import { TableColumnInfo } from '../../../types/database';
 
 export type FilterOperator =
@@ -187,7 +187,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
 
   return (
     <div className="p-3 border-b border-gray-200 bg-gray-50">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex gap-8 items-center mb-2">
         <h3 className="text-sm font-semibold">{t('query.filters')}</h3>
         <div className="flex gap-1">
           <Button size="xs" onClick={onAddFilter}>
@@ -243,10 +243,11 @@ const FilterControls: React.FC<FilterControlsProps> = ({
                 })()}
               </Select>
               {operatorRequiresValue(filter.operator) && (
-                <input
+                <TextInput
                   type="text"
                   placeholder={t('query.filterValue')}
-                  className="text-xs border border-gray-300 rounded px-2 py-1 flex-1 min-w-[100px] max-w-xs"
+                  sizing="sm"
+                  className="flex-1 min-w-[100px] max-w-xs"
                   value={filter.value}
                   onChange={e => onUpdateFilter(index, { value: e.target.value })}
                   disabled={!filter.column}

@@ -8,3 +8,7 @@
   display: inline-block;
   padding: 0 3px;
 }
+
+.cm-sql-statement-highlight-bg {
+  background-color: aliceblue;
+}

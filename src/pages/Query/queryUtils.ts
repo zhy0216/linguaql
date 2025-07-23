@@ -1,88 +1,72 @@
-import { StateField } from '@codemirror/state';
-import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
+import { layer, RectangleMarker } from '@codemirror/view';
 
 /**
- * SQL Statement highlighting extension for CodeMirror
- * Highlights the current SQL statement based on cursor position
+ * SQL Statement highlighting extension using layers for better line wrapping compatibility
  */
-export const sqlStatementHighlight = StateField.define<DecorationSet>({
-  create() {
-    return Decoration.none;
-  },
-  update(_, tr) {
-    if (!tr.selection || !tr.state.doc.length) {
-      return Decoration.none;
-    }
+export const sqlStatementHighlight = [
+  // Layer for background highlighting
+  layer({
+    above: false, // Draw behind text
+    markers(view) {
+      const markers: RectangleMarker[] = [];
+      const { state } = view;
+      const { selection, doc } = state;
 
-    let cursorPos = tr.selection.main.head;
-    const doc = tr.state.doc;
-    const text = doc.toString();
-
-    // Special handling: if cursor is after semicolon and rest of line is empty
-    if (cursorPos > 0 && text[cursorPos - 1] === ';') {
-      const currentLine = doc.lineAt(cursorPos);
-      const cursorPosInLine = cursorPos - currentLine.from;
-
-      if (currentLine.text.slice(cursorPosInLine).trim() === '') {
-        // Move cursor position back to highlight the previous statement
-        cursorPos = cursorPos - 1;
-      }
-    }
-
-    // Find the current SQL statement boundaries
-    let statementStart = 0;
-    let statementEnd = text.length;
-
-    // Find the previous semicolon (statement start)
-    for (let i = cursorPos - 1; i >= 0; i--) {
-      if (text[i] === ';') {
-        statementStart = i + 1;
-        break;
-      }
-    }
-
-    // Find the next semicolon (statement end)
-    for (let i = cursorPos; i < text.length; i++) {
-      if (text[i] === ';') {
-        statementEnd = i;
-        break;
-      }
-    }
-
-    // Skip whitespace at the beginning
-    while (statementStart < statementEnd && /\s/.test(text[statementStart])) {
-      statementStart++;
-    }
-
-    // Skip whitespace at the end
-    while (statementEnd > statementStart && /\s/.test(text[statementEnd - 1])) {
-      statementEnd--;
-    }
-
-    // Only highlight if there's actual content
-    if (statementStart < statementEnd && text.slice(statementStart, statementEnd).trim()) {
-      const decorations = [];
-
-      // Get all lines that are part of this statement
-      const startLine = doc.lineAt(statementStart);
-      const endLine = doc.lineAt(statementEnd);
-
-      // Add line decorations for each line in the statement
-      for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
-        const line = doc.line(lineNum);
-        const decoration = Decoration.line({
-          class: 'cm-sql-statement-highlight',
-        }).range(line.from);
-        decorations.push(decoration);
+      if (!selection || !doc.length) {
+        return markers;
       }
 
-      return Decoration.set(decorations);
-    }
+      const cursorPos = selection.main.head;
+      const text = doc.toString();
+      const currentStatement = getCurrentLineStatement(text, cursorPos);
 
-    return Decoration.none;
-  },
-  provide: f => EditorView.decorations.from(f),
-});
+      if (!currentStatement.trim()) {
+        return markers;
+      }
+
+      // Find the statement boundaries in the text
+      const statementIndex = text.indexOf(currentStatement);
+      if (statementIndex === -1) {
+        return markers;
+      }
+
+      const startPos = statementIndex;
+      const endPos = statementIndex + currentStatement.length;
+
+      try {
+        const startCoords = view.coordsAtPos(startPos);
+        const endCoords = view.coordsAtPos(endPos);
+        console.log(
+          '#### startCoords, endCoords, startPos, endPos',
+          startCoords,
+          endCoords,
+          startPos,
+          endPos
+        );
+        if (startCoords && endCoords) {
+          // Create a rectangle marker that spans the statement
+          markers.push(
+            new RectangleMarker(
+              'cm-sql-statement-highlight-bg',
+              0,
+              startCoords.top - 22,
+              view.contentDOM.offsetWidth + 40,
+              endCoords.bottom - startCoords.top + 20
+            )
+          );
+        }
+      } catch (e) {
+        // Ignore coordinate calculation errors
+      }
+
+      return markers;
+    },
+    update(update) {
+      // Update when selection changes
+      return update.selectionSet || update.docChanged;
+    },
+  }),
+];
 
 /**
  * Get the current SQL statement based on cursor position

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import CodeMirror from '@uiw/react-codemirror';
 import { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
+import { EditorView } from '@codemirror/view';
 import dbService, {
   DatabaseTable,
   TableDataRequest,
@@ -423,7 +424,7 @@ const Query: React.FC<QueryProps> = () => {
                     ref={codeMirrorRef}
                     value={queryInput}
                     onChange={handleQueryInputChange}
-                    extensions={[sql(), sqlStatementHighlight]}
+                    extensions={[sql(), sqlStatementHighlight, EditorView.lineWrapping]}
                     placeholder={t('query.enterQuery')}
                     theme="light"
                     basicSetup={{
@@ -445,6 +446,7 @@ const Query: React.FC<QueryProps> = () => {
                       fontSize: '14px',
                       fontFamily:
                         'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      // maxWidth: '800px',
                     }}
                   />
                 </div>

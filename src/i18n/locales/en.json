@@ -148,7 +148,7 @@
     "hideApiKey": "Hide API Key",
     "configurePreferences": "Configure your application preferences",
     "sqlStatementTypes": "SQL Statement Types",
-    "sqlStatementTypesDescription": "Configure which SQL statement types are allowed for execution. Unchecked types will be blocked.",
+    "sqlStatementTypesDescription": "Configure which SQL statement types require safety checks for AI-generated queries. Unchecked types will execute directly.",
     "resetToDefault": "Reset to Default",
     "safetyCheck": "Safety Check",
     "statementTypes": {

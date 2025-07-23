@@ -16,7 +16,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     updateLanguage,
     getLanguage,
     getSQLValidationConfig,
-    updateStatementTypeEnabled,
+    updateStatementTypeRequiresSafetyCheck,
     resetSQLValidationConfig,
   } = useSettingsStore();
   const [showApiKey, setShowApiKey] = useState(false);
@@ -28,8 +28,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     updateLanguage(language);
   };
 
-  const handleStatementTypeToggle = (type: string, enabled: boolean) => {
-    updateStatementTypeEnabled(type, enabled);
+  const handleStatementTypeToggle = (type: string, requiresSafetyCheck: boolean) => {
+    updateStatementTypeRequiresSafetyCheck(type, requiresSafetyCheck);
     setSqlConfig(getSQLValidationConfig());
   };
 
@@ -271,7 +271,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 <input
                   type="checkbox"
                   id={`stmt-${statementType.type}`}
-                  checked={statementType.enabled}
+                  checked={statementType.requiresSafetyCheck}
                   onChange={e => handleStatementTypeToggle(statementType.type, e.target.checked)}
                   className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />

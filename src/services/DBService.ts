@@ -2,6 +2,7 @@ import Database from '@tauri-apps/plugin-sql';
 import { DatabaseConfig, ConnectionResult, TableColumnInfo } from '../types/database';
 import { Parser } from 'node-sql-parser';
 import { useSettingsStore } from '../stores/settingsStore';
+import i18n from 'i18next';
 
 export interface DatabaseTable {
   name: string;
@@ -262,6 +263,7 @@ export class DBService {
           columns,
           rows,
           rowsAffected: result.length,
+          error: result.length === 0 ? i18n.t('query.noResultsFound') : undefined,
         };
       } else {
         // INSERT, UPDATE, DELETE 等修改操作

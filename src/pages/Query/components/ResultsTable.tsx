@@ -50,7 +50,20 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  if (data.error) {
+    return <div className="text-sm text-red-600 font-medium">{data.error}</div>;
+  }
+
   if (data.rows.length === 0) {
+    // If there are no rows but rowsAffected is available, show that information
+    if (data.rowsAffected !== undefined) {
+      return (
+        <div className="text-sm text-green-600 font-medium">
+          {t('query.rowsAffected', { count: data.rowsAffected })}
+        </div>
+      );
+    }
+
     return (
       <div className="text-sm text-gray-500">
         {filterConfigs.some(f => f.column && f.value)

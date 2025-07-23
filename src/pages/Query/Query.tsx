@@ -335,12 +335,7 @@ const Query: React.FC<QueryProps> = () => {
   // Helper function to execute validated SQL
   const executeValidatedSQL = async (sql: string) => {
     try {
-      const result = await dbService.executeQuery(sql);
-
-      const queryResult = {
-        columns: result.columns,
-        rows: result.rows,
-      };
+      const queryResult = await dbService.executeQuery(sql);
 
       setQueryResult(queryResult);
 

@@ -15,7 +15,7 @@ interface SettingsState {
   updateSQLValidationConfig: (config: Partial<SQLValidationConfig>) => void;
   resetSQLValidationConfig: () => void;
   getSQLValidationConfig: () => SQLValidationConfig;
-  updateStatementTypeEnabled: (type: string, enabled: boolean) => void;
+  updateStatementTypeRequiresSafetyCheck: (type: string, requiresSafetyCheck: boolean) => void;
   getEnabledStatementTypes: () => string[];
   getStatementTypesWithoutSafetyCheck: () => string[];
 }
@@ -36,31 +36,26 @@ const createDefaultSQLValidationConfig = (): SQLValidationConfig => ({
     // 读操作 - 不需要安全检查
     {
       type: 'select',
-      enabled: true,
       description: 'SELECT statements for querying data',
       requiresSafetyCheck: false,
     },
     {
       type: 'with',
-      enabled: true,
       description: 'WITH clauses for common table expressions',
       requiresSafetyCheck: false,
     },
     {
       type: 'union',
-      enabled: true,
       description: 'UNION operations for combining results',
       requiresSafetyCheck: false,
     },
     {
       type: 'intersect',
-      enabled: true,
       description: 'INTERSECT operations for common results',
       requiresSafetyCheck: false,
     },
     {
       type: 'except',
-      enabled: true,
       description: 'EXCEPT operations for difference results',
       requiresSafetyCheck: false,
     },
@@ -68,19 +63,16 @@ const createDefaultSQLValidationConfig = (): SQLValidationConfig => ({
     // 写操作 - 需要安全检查
     {
       type: 'insert',
-      enabled: true,
       description: 'INSERT statements for adding data',
       requiresSafetyCheck: true,
     },
     {
       type: 'update',
-      enabled: true,
       description: 'UPDATE statements for modifying data',
       requiresSafetyCheck: true,
     },
     {
       type: 'delete',
-      enabled: true,
       description: 'DELETE statements for removing data',
       requiresSafetyCheck: true,
     },
@@ -88,25 +80,21 @@ const createDefaultSQLValidationConfig = (): SQLValidationConfig => ({
     // DDL操作 - 需要安全检查
     {
       type: 'create',
-      enabled: true,
       description: 'CREATE statements for creating objects',
       requiresSafetyCheck: true,
     },
     {
       type: 'alter',
-      enabled: true,
       description: 'ALTER statements for modifying objects',
       requiresSafetyCheck: true,
     },
     {
       type: 'drop',
-      enabled: true,
       description: 'DROP statements for removing objects',
       requiresSafetyCheck: true,
     },
     {
       type: 'truncate',
-      enabled: true,
       description: 'TRUNCATE statements for clearing tables',
       requiresSafetyCheck: true,
     },
@@ -208,11 +196,11 @@ export const useSettingsStore = create<SettingsState>()(
         return state.settings.sqlValidation;
       },
 
-      updateStatementTypeEnabled: (type: string, enabled: boolean) => {
+      updateStatementTypeRequiresSafetyCheck: (type: string, requiresSafetyCheck: boolean) => {
         const state = get();
         const currentConfig = state.settings.sqlValidation || defaultSQLValidationConfig;
         const updatedStatementTypes = currentConfig.enabledStatementTypes.map(stmt =>
-          stmt.type === type ? { ...stmt, enabled } : stmt
+          stmt.type === type ? { ...stmt, requiresSafetyCheck } : stmt
         );
 
         set(currentState => ({
@@ -229,14 +217,14 @@ export const useSettingsStore = create<SettingsState>()(
       getEnabledStatementTypes: () => {
         const state = get();
         const config = state.settings.sqlValidation || defaultSQLValidationConfig;
-        return config.enabledStatementTypes.filter(stmt => stmt.enabled).map(stmt => stmt.type);
+        return config.enabledStatementTypes.map(stmt => stmt.type);
       },
 
       getStatementTypesWithoutSafetyCheck: () => {
         const state = get();
         const config = state.settings.sqlValidation || defaultSQLValidationConfig;
         return config.enabledStatementTypes
-          .filter(stmt => stmt.enabled && !stmt.requiresSafetyCheck)
+          .filter(stmt => !stmt.requiresSafetyCheck)
           .map(stmt => stmt.type);
       },
     }),

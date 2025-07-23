@@ -149,7 +149,7 @@
     "hideApiKey": "隐藏 API 密钥",
     "configurePreferences": "配置您的应用程序偏好",
     "sqlStatementTypes": "SQL 语句类型",
-    "sqlStatementTypesDescription": "配置允许执行的 SQL 语句类型。未勾选的类型将被阻止执行。",
+    "sqlStatementTypesDescription": "配置 AI 生成的语句需要安全检查的 SQL 语句类型。未勾选的操作将直接运行。",
     "resetToDefault": "重置为默认",
     "safetyCheck": "安全检查",
     "statementTypes": {

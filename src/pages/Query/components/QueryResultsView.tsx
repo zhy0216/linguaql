@@ -76,17 +76,6 @@ const QueryResultsView: React.FC<QueryResultsViewProps> = ({
               </div>
             </div>
           )}
-
-          {/* Empty Results State */}
-          {!isExecuting && queryResult && queryResult.rows.length === 0 && (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-center text-gray-500">
-                <div className="text-lg mb-2">📊</div>
-                <div>{t('query.noResultsFound')}</div>
-                <div className="text-sm mt-1">{t('query.queryReturnedNoRows')}</div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

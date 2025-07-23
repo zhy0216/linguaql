@@ -143,6 +143,11 @@ const Query: React.FC<QueryProps> = () => {
     deleteSession(sessionId);
   };
 
+  // Handle session rename
+  const handleRenameSession = (sessionId: string, newName: string) => {
+    updateSession(sessionId, { name: newName, lastModified: new Date().toISOString() });
+  };
+
   // Fetch database tables
   const fetchDatabaseTables = async () => {
     try {
@@ -395,6 +400,7 @@ const Query: React.FC<QueryProps> = () => {
         onSessionSelect={handleSessionSelect}
         onCreateNewSession={createNewSession}
         onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
         databaseTables={databaseTables}
         selectedTable={selectedTable}
         onTableSelect={loadTableData}

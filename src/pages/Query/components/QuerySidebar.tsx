@@ -11,6 +11,7 @@ interface QuerySidebarProps {
   onSessionSelect: (sessionId: string) => void;
   onCreateNewSession: () => void;
   onDeleteSession?: (sessionId: string) => void;
+  onRenameSession?: (sessionId: string, newName: string) => void;
 
   // Database tables props
   databaseTables: DatabaseTable[];
@@ -24,6 +25,7 @@ const QuerySidebar: React.FC<QuerySidebarProps> = ({
   onSessionSelect,
   onCreateNewSession,
   onDeleteSession,
+  onRenameSession,
   databaseTables,
   selectedTable,
   onTableSelect,
@@ -36,6 +38,7 @@ const QuerySidebar: React.FC<QuerySidebarProps> = ({
         onSessionSelect={onSessionSelect}
         onCreateNewSession={onCreateNewSession}
         onDeleteSession={onDeleteSession}
+        onRenameSession={onRenameSession}
       />
       <DatabaseTablesList
         databaseTables={databaseTables}

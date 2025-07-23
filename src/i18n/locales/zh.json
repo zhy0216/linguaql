@@ -66,6 +66,7 @@
     "error": "查询错误",
     "sessions": "查询会话",
     "newSession": "新会话",
+    "clickToRename": "点击重命名",
     "filters": "筛选器",
     "addFilter": "添加筛选器",
     "clearAllFilters": "清除所有筛选器",

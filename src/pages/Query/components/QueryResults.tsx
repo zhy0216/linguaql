@@ -68,7 +68,6 @@ const QueryResults: React.FC<QueryResultsProps> = ({
   tableData,
   filteredAndSortedData,
   isLoadingTableData,
-  currentTableColumnInfos,
   queryResult,
   isExecuting,
   sortConfig,
@@ -132,46 +131,6 @@ const QueryResults: React.FC<QueryResultsProps> = ({
                 showFilterInfo={true}
                 originalRowCount={tableData?.rows.length}
               />
-
-              {/* Pagination Controls */}
-              {filteredAndSortedData.rows.length > 0 && (
-                <div className="flex justify-between items-center mt-4 text-xs">
-                  <div>
-                    {t('query.showingRows', { count: filteredAndSortedData.rows.length })}
-                    {filterConfigs.some(f => f.column && f.value) && tableData && (
-                      <span className="ml-2 text-gray-500">
-                        ({t('query.filteredFromTotal', { total: tableData.rows.length })})
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      size="xs"
-                      disabled={pagination.page === 1 || isLoadingTableData}
-                      onClick={() =>
-                        onLoadTableData(selectedTable, pagination.page - 1, pagination.pageSize)
-                      }
-                    >
-                      {t('common.previous')}
-                    </Button>
-                    <span>
-                      {t('common.page')} {pagination.page}
-                    </span>
-                    <Button
-                      size="xs"
-                      disabled={
-                        (tableData && tableData.rows.length < pagination.pageSize) ||
-                        isLoadingTableData
-                      }
-                      onClick={() =>
-                        onLoadTableData(selectedTable, pagination.page + 1, pagination.pageSize)
-                      }
-                    >
-                      {t('common.next')}
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           ) : isExecuting ? (
             <div className="flex justify-center items-center h-full">

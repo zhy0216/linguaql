@@ -139,7 +139,25 @@
     "openRouterInfo": "OpenRouter 通过单一 API 提供多个 AI 模型的访问。您可以在此使用 OpenRouter API 密钥，或配置不同的 OpenAI 兼容端点。",
     "showApiKey": "显示 API 密钥",
     "hideApiKey": "隐藏 API 密钥",
-    "configurePreferences": "配置您的应用程序偏好"
+    "configurePreferences": "配置您的应用程序偏好",
+    "sqlStatementTypes": "SQL 语句类型",
+    "sqlStatementTypesDescription": "配置允许执行的 SQL 语句类型。未勾选的类型将被阻止执行。",
+    "resetToDefault": "重置为默认",
+    "safetyCheck": "安全检查",
+    "statementTypes": {
+      "select": "SELECT 语句用于查询数据",
+      "insert": "INSERT 语句用于添加数据",
+      "update": "UPDATE 语句用于修改数据",
+      "delete": "DELETE 语句用于删除数据",
+      "create": "CREATE 语句用于创建对象",
+      "alter": "ALTER 语句用于修改对象",
+      "drop": "DROP 语句用于删除对象",
+      "truncate": "TRUNCATE 语句用于清空表",
+      "with": "WITH 子句用于公共表表达式",
+      "union": "UNION 操作用于合并结果",
+      "intersect": "INTERSECT 操作用于获取交集结果",
+      "except": "EXCEPT 操作用于获取差集结果"
+    }
   },
   "ai": {
     "convertToSql": "转换为 SQL",

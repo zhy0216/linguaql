@@ -138,7 +138,25 @@
     "openRouterInfo": "OpenRouter provides access to multiple AI models through a single API. You can use your OpenRouter API key here, or configure a different OpenAI-compatible endpoint.",
     "showApiKey": "Show API Key",
     "hideApiKey": "Hide API Key",
-    "configurePreferences": "Configure your application preferences"
+    "configurePreferences": "Configure your application preferences",
+    "sqlStatementTypes": "SQL Statement Types",
+    "sqlStatementTypesDescription": "Configure which SQL statement types are allowed for execution. Unchecked types will be blocked.",
+    "resetToDefault": "Reset to Default",
+    "safetyCheck": "Safety Check",
+    "statementTypes": {
+      "select": "SELECT statements for querying data",
+      "insert": "INSERT statements for adding data",
+      "update": "UPDATE statements for modifying data",
+      "delete": "DELETE statements for removing data",
+      "create": "CREATE statements for creating objects",
+      "alter": "ALTER statements for modifying objects",
+      "drop": "DROP statements for removing objects",
+      "truncate": "TRUNCATE statements for clearing tables",
+      "with": "WITH clauses for common table expressions",
+      "union": "UNION operations for combining results",
+      "intersect": "INTERSECT operations for common results",
+      "except": "EXCEPT operations for difference results"
+    }
   },
   "ai": {
     "convertToSql": "Convert to SQL",

@@ -1,6 +1,7 @@
 import Database from '@tauri-apps/plugin-sql';
 import { DatabaseConfig, ConnectionResult, TableColumnInfo } from '../types/database';
 import { Parser } from 'node-sql-parser';
+import { useSettingsStore } from '../stores/settingsStore';
 
 export interface DatabaseTable {
   name: string;
@@ -52,21 +53,8 @@ export class DBService {
         return false;
       }
 
-      // Check for common SQL statement types
-      const validStatementTypes = [
-        'select',
-        'insert',
-        'update',
-        'delete',
-        'create',
-        'alter',
-        'drop',
-        'truncate',
-        'with',
-        'union',
-        'intersect',
-        'except',
-      ];
+      // Get enabled statement types from settings
+      const validStatementTypes = useSettingsStore.getState().getEnabledStatementTypes();
 
       // Handle both single statements and arrays of statements
       const statements = Array.isArray(ast) ? ast : [ast];
@@ -113,55 +101,25 @@ export class DBService {
 
       const statements = Array.isArray(ast) ? ast : [ast];
 
+      // 获取不需要安全检查的语句类型
+      const statementTypesWithoutSafetyCheck = useSettingsStore
+        .getState()
+        .getStatementTypesWithoutSafetyCheck();
+
       for (const statement of statements) {
         const statementType = statement.type.toLowerCase();
 
-        // Allow only safe read-only operations
-        const safeStatements = ['select', 'with'];
-
-        // All data modification and system operations are dangerous
-        const dangerousStatements = [
-          // Data modification operations
-          'insert',
-          'update',
-          'delete',
-          // Schema modification operations
-          'drop',
-          'truncate',
-          'alter',
-          'create',
-          // Permission and transaction operations
-          'grant',
-          'revoke',
-          'commit',
-          'rollback',
-          // System operations
-          'set',
-          'reset',
-          'show',
-          'explain',
-          'analyze',
-          'vacuum',
-          'reindex',
-        ];
-
-        // Block dangerous statements immediately
-        if (dangerousStatements.includes(statementType)) {
-          console.warn(`Blocked dangerous SQL statement: ${statementType}`);
-          return false;
-        }
-
-        // Allow only safe read-only statements
-        if (safeStatements.includes(statementType)) {
-          // Still check for suspicious patterns even in SELECT statements
+        // 如果语句类型不需要安全检查，则直接允许（但仍然检查可疑模式）
+        if (statementTypesWithoutSafetyCheck.includes(statementType)) {
+          // 仍然检查可疑模式，即使是安全的读操作
           if (this.containsSuspiciousPatterns(sql)) {
             return false;
           }
           continue;
         }
 
-        // Block all other statement types (including data modification)
-        console.warn(`Blocked unsafe statement type: ${statementType}`);
+        // 其他需要安全检查的语句类型都被认为是危险的
+        console.warn(`Blocked potentially dangerous SQL statement: ${statementType}`);
         return false;
       }
 

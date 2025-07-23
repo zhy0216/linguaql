@@ -9,18 +9,34 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const { t } = useTranslation();
-  const { settings, updateOpenAIConfig, resetOpenAIConfig, updateLanguage, getLanguage } =
-    useSettingsStore();
+  const {
+    settings,
+    updateOpenAIConfig,
+    resetOpenAIConfig,
+    updateLanguage,
+    getLanguage,
+    getSQLValidationConfig,
+    updateStatementTypeEnabled,
+    resetSQLValidationConfig,
+  } = useSettingsStore();
   const [showApiKey, setShowApiKey] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
+  const [sqlConfig, setSqlConfig] = useState(getSQLValidationConfig());
 
   const handleReset = () => {
     resetOpenAIConfig();
+    resetSQLValidationConfig();
+    setSqlConfig(getSQLValidationConfig());
   };
 
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
     updateLanguage(language);
+  };
+
+  const handleStatementTypeToggle = (type: string, enabled: boolean) => {
+    updateStatementTypeEnabled(type, enabled);
+    setSqlConfig(getSQLValidationConfig());
   };
 
   const handleInputChange = (field: keyof OpenAIConfig, value: string) => {
@@ -198,6 +214,61 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+          </div>
+        </div>
+
+        {/* SQL Statement Types Configuration Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {t('settings.sqlStatementTypes')}
+            </h2>
+            <button
+              onClick={() => {
+                resetSQLValidationConfig();
+                setSqlConfig(getSQLValidationConfig());
+              }}
+              className="px-3 py-1 text-sm text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded transition-colors border border-orange-200"
+            >
+              {t('settings.resetToDefault')}
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-4">{t('settings.sqlStatementTypesDescription')}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sqlConfig.enabledStatementTypes.map(statementType => (
+              <div
+                key={statementType.type}
+                className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <input
+                  type="checkbox"
+                  id={`stmt-${statementType.type}`}
+                  checked={statementType.enabled}
+                  onChange={e => handleStatementTypeToggle(statementType.type, e.target.checked)}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor={`stmt-${statementType.type}`}
+                      className="block text-sm font-medium text-gray-900 cursor-pointer"
+                    >
+                      {statementType.type.toUpperCase()}
+                    </label>
+                    {statementType.requiresSafetyCheck && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {t('settings.safetyCheck')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {t(`settings.statementTypes.${statementType.type}`)}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

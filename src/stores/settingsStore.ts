@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { SettingsConfig, OpenAIConfig, LanguageConfig } from '../types/config';
+import {
+  SettingsConfig,
+  OpenAIConfig,
+  LanguageConfig,
+  SQLValidationConfig,
+  SQLStatementType,
+} from '../types/config';
 import i18n from '../i18n';
 
 interface SettingsState {
@@ -12,21 +18,113 @@ interface SettingsState {
   getOpenAIConfig: () => OpenAIConfig;
   updateLanguage: (language: string) => void;
   getLanguage: () => string;
+  updateSQLValidationConfig: (config: Partial<SQLValidationConfig>) => void;
+  resetSQLValidationConfig: () => void;
+  getSQLValidationConfig: () => SQLValidationConfig;
+  updateStatementTypeEnabled: (type: string, enabled: boolean) => void;
+  getEnabledStatementTypes: () => string[];
+  getStatementTypesWithoutSafetyCheck: () => string[];
 }
 
 const defaultOpenAIConfig: OpenAIConfig = {
   apiKey: '',
   baseUrl: 'https://openrouter.ai/api/v1',
-  model: 'gpt-3.5-turbo',
+  model: 'qwen/qwen-turbo',
 };
 
 const defaultLanguageConfig: LanguageConfig = {
   language: 'en',
 };
 
+// 创建默认SQL验证配置的函数，支持国际化
+const createDefaultSQLValidationConfig = (): SQLValidationConfig => ({
+  enabledStatementTypes: [
+    // 读操作 - 不需要安全检查
+    {
+      type: 'select',
+      enabled: true,
+      description: 'SELECT statements for querying data',
+      requiresSafetyCheck: false,
+    },
+    {
+      type: 'with',
+      enabled: true,
+      description: 'WITH clauses for common table expressions',
+      requiresSafetyCheck: false,
+    },
+    {
+      type: 'union',
+      enabled: true,
+      description: 'UNION operations for combining results',
+      requiresSafetyCheck: false,
+    },
+    {
+      type: 'intersect',
+      enabled: true,
+      description: 'INTERSECT operations for common results',
+      requiresSafetyCheck: false,
+    },
+    {
+      type: 'except',
+      enabled: true,
+      description: 'EXCEPT operations for difference results',
+      requiresSafetyCheck: false,
+    },
+
+    // 写操作 - 需要安全检查
+    {
+      type: 'insert',
+      enabled: true,
+      description: 'INSERT statements for adding data',
+      requiresSafetyCheck: true,
+    },
+    {
+      type: 'update',
+      enabled: true,
+      description: 'UPDATE statements for modifying data',
+      requiresSafetyCheck: true,
+    },
+    {
+      type: 'delete',
+      enabled: true,
+      description: 'DELETE statements for removing data',
+      requiresSafetyCheck: true,
+    },
+
+    // DDL操作 - 需要安全检查
+    {
+      type: 'create',
+      enabled: true,
+      description: 'CREATE statements for creating objects',
+      requiresSafetyCheck: true,
+    },
+    {
+      type: 'alter',
+      enabled: true,
+      description: 'ALTER statements for modifying objects',
+      requiresSafetyCheck: true,
+    },
+    {
+      type: 'drop',
+      enabled: true,
+      description: 'DROP statements for removing objects',
+      requiresSafetyCheck: true,
+    },
+    {
+      type: 'truncate',
+      enabled: true,
+      description: 'TRUNCATE statements for clearing tables',
+      requiresSafetyCheck: true,
+    },
+  ],
+});
+
+const defaultSQLValidationConfig = createDefaultSQLValidationConfig();
+
 const defaultSettings: SettingsConfig = {
   openai: defaultOpenAIConfig,
   language: defaultLanguageConfig,
+  sqlValidation: defaultSQLValidationConfig,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -79,6 +177,73 @@ export const useSettingsStore = create<SettingsState>()(
           return defaultLanguageConfig.language;
         }
         return state.settings.language.language;
+      },
+
+      updateSQLValidationConfig: (config: Partial<SQLValidationConfig>) =>
+        set(state => ({
+          settings: {
+            ...state.settings,
+            sqlValidation: {
+              ...state.settings.sqlValidation,
+              ...config,
+            },
+          },
+        })),
+
+      resetSQLValidationConfig: () =>
+        set(state => ({
+          settings: {
+            ...state.settings,
+            sqlValidation: defaultSQLValidationConfig,
+          },
+        })),
+
+      getSQLValidationConfig: () => {
+        const state = get();
+        // Handle legacy users who don't have sqlValidation property
+        if (!state.settings.sqlValidation) {
+          // Migrate by adding default SQL validation config
+          set(currentState => ({
+            settings: {
+              ...currentState.settings,
+              sqlValidation: defaultSQLValidationConfig,
+            },
+          }));
+          return defaultSQLValidationConfig;
+        }
+        return state.settings.sqlValidation;
+      },
+
+      updateStatementTypeEnabled: (type: string, enabled: boolean) => {
+        const state = get();
+        const currentConfig = state.settings.sqlValidation || defaultSQLValidationConfig;
+        const updatedStatementTypes = currentConfig.enabledStatementTypes.map(stmt =>
+          stmt.type === type ? { ...stmt, enabled } : stmt
+        );
+
+        set(currentState => ({
+          settings: {
+            ...currentState.settings,
+            sqlValidation: {
+              ...currentConfig,
+              enabledStatementTypes: updatedStatementTypes,
+            },
+          },
+        }));
+      },
+
+      getEnabledStatementTypes: () => {
+        const state = get();
+        const config = state.settings.sqlValidation || defaultSQLValidationConfig;
+        return config.enabledStatementTypes.filter(stmt => stmt.enabled).map(stmt => stmt.type);
+      },
+
+      getStatementTypesWithoutSafetyCheck: () => {
+        const state = get();
+        const config = state.settings.sqlValidation || defaultSQLValidationConfig;
+        return config.enabledStatementTypes
+          .filter(stmt => stmt.enabled && !stmt.requiresSafetyCheck)
+          .map(stmt => stmt.type);
       },
     }),
     {

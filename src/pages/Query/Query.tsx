@@ -392,7 +392,34 @@ const Query: React.FC<QueryProps> = () => {
 
   // Select a query from history
   const selectHistoryQuery = (query: string) => {
-    setQueryInput(query);
+    const currentInput = queryInput.trim();
+    // Add semicolon if the query doesn't end with one
+    const queryWithSemicolon = query.trim().endsWith(';') ? query : `${query};`;
+    const newInput = currentInput ? `${currentInput}\n\n${queryWithSemicolon}` : queryWithSemicolon;
+    setQueryInput(newInput);
+
+    // Update the session store
+    if (activeSessionId) {
+      updateSession(activeSessionId, { queryInput: newInput });
+    }
+
+    // Scroll to bottom and position cursor at the end after state update
+    setTimeout(() => {
+      if (codeMirrorRef.current?.view) {
+        const view = codeMirrorRef.current.view;
+        const doc = view.state.doc;
+        const endPos = doc.length;
+
+        // Move cursor to the end of the document
+        view.dispatch({
+          selection: { anchor: endPos, head: endPos },
+          scrollIntoView: true,
+        });
+
+        // Focus the editor
+        view.focus();
+      }
+    }, 0);
   };
 
   return (

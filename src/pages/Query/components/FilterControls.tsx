@@ -29,6 +29,7 @@ interface FilterControlsProps {
   onAddFilter: () => void;
   onUpdateFilter: (index: number, updates: Partial<FilterConfig>) => void;
   onRemoveFilter: (index: number) => void;
+  onApplyFilters: () => void;
   onClearAllFilters: () => void;
 }
 
@@ -180,6 +181,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
   onAddFilter,
   onUpdateFilter,
   onRemoveFilter,
+  onApplyFilters,
   onClearAllFilters,
 }) => {
   const { t } = useTranslation();
@@ -194,9 +196,14 @@ const FilterControls: React.FC<FilterControlsProps> = ({
             {t('query.addFilter')}
           </Button>
           {filterConfigs.length > 0 && (
-            <Button size="xs" color="gray" onClick={onClearAllFilters}>
-              {t('query.clearAll')}
-            </Button>
+            <>
+              <Button size="xs" color="blue" onClick={onApplyFilters}>
+                {t('query.applyFilters')}
+              </Button>
+              <Button size="xs" color="gray" onClick={onClearAllFilters}>
+                {t('query.clearAll')}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -250,6 +257,11 @@ const FilterControls: React.FC<FilterControlsProps> = ({
                   className="flex-1 min-w-[100px] max-w-xs"
                   value={filter.value}
                   onChange={e => onUpdateFilter(index, { value: e.target.value })}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      onApplyFilters();
+                    }
+                  }}
                   disabled={!filter.column}
                 />
               )}

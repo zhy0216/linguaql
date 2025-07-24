@@ -71,6 +71,7 @@
     "newSession": "New Session",
     "filters": "Filters",
     "addFilter": "Add Filter",
+    "applyFilters": "Apply Filters",
     "clearAllFilters": "Clear All Filters",
     "filtersApplied": "{{count}} filters applied",
     "sortBy": "Sort by",

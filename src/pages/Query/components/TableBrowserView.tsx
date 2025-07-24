@@ -55,7 +55,8 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([]);
+  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([]); // Draft filters (for UI)
+  const [appliedFilterConfigs, setAppliedFilterConfigs] = useState<FilterConfig[]>([]); // Applied filters (for API)
 
   // Convert FilterConfig to TableFilter
   const convertFiltersToTableFilters = useCallback((filters: FilterConfig[]): TableFilter[] => {
@@ -89,7 +90,7 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
         tableName: selectedTable.name,
         page: currentPage,
         pageSize,
-        filters: convertFiltersToTableFilters(filterConfigs),
+        filters: convertFiltersToTableFilters(appliedFilterConfigs),
         sort: convertSortToTableSort(sortConfig),
       };
 
@@ -105,7 +106,7 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
     selectedTable,
     currentPage,
     pageSize,
-    filterConfigs,
+    appliedFilterConfigs,
     sortConfig,
     convertFiltersToTableFilters,
     convertSortToTableSort,
@@ -116,18 +117,19 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
     loadTableData();
   }, [loadTableData]);
 
-  // Reset to first page when filters or sort change
+  // Reset to first page when applied filters or sort change
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [filterConfigs, sortConfig]);
+  }, [appliedFilterConfigs, sortConfig]);
 
   // Reset state when table changes
   useEffect(() => {
     setCurrentPage(1);
     setSortConfig(null);
     setFilterConfigs([]);
+    setAppliedFilterConfigs([]);
     setTableData(null);
   }, [selectedTable]);
 
@@ -156,8 +158,13 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
     setFilterConfigs(prev => prev.filter((_, i) => i !== index));
   }, []);
 
+  const handleApplyFilters = useCallback(() => {
+    setAppliedFilterConfigs([...filterConfigs]);
+  }, [filterConfigs]);
+
   const handleClearAllFilters = useCallback(() => {
     setFilterConfigs([]);
+    setAppliedFilterConfigs([]);
   }, []);
 
   // Sort handling
@@ -201,6 +208,7 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
         onAddFilter={handleAddFilter}
         onUpdateFilter={handleUpdateFilter}
         onRemoveFilter={handleRemoveFilter}
+        onApplyFilters={handleApplyFilters}
         onClearAllFilters={handleClearAllFilters}
       />
 
@@ -210,12 +218,14 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
           {/* Status Bar */}
           <h3 className="text-sm font-semibold mb-2">
             {selectedTable.schema}.{selectedTable.name}
-            {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
-              <span className="ml-2 text-xs text-blue-600">
-                ({filterConfigs.filter(f => f.column && f.value).length} filter
-                {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
-              </span>
-            )}
+            {appliedFilterConfigs.length > 0 &&
+              appliedFilterConfigs.some(f => f.column && f.value) && (
+                <span className="ml-2 text-xs text-blue-600">
+                  ({appliedFilterConfigs.filter(f => f.column && f.value).length} filter
+                  {appliedFilterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''}{' '}
+                  applied)
+                </span>
+              )}
           </h3>
 
           {/* Results Table */}

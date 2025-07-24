@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from 'flowbite-react';
 import { QueryResult } from '@/services/DBService';
+import TableCellContent from './TableCellContent';
 
 interface SortConfig {
   column: string;
@@ -111,7 +112,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               <TableRow key={rowIndex} className="bg-white dark:border-gray-700 dark:bg-gray-800">
                 {row.map((cell, cellIndex) => (
                   <TableCell key={cellIndex} className="px-4 py-2 text-xs">
-                    {cell === null ? t('common.null') : String(cell)}
+                    <TableCellContent
+                      cellValue={cell}
+                      columnName={data.columns[cellIndex]}
+                      rowIndex={rowIndex}
+                    />
                   </TableCell>
                 ))}
               </TableRow>

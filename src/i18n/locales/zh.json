@@ -18,7 +18,9 @@
     "confirm": "确认",
     "close": "关闭",
     "page": "页",
-    "null": "NULL"
+    "null": "NULL",
+    "showMore": "显示更多",
+    "copy": "复制"
   },
   "database": {
     "connection": "数据库连接",
@@ -119,6 +121,10 @@
     "noResultsFound": "未找到结果",
     "noQueryExecuted": "尚未执行查询",
     "enterQueryToStart": "请在上方输入查询以开始",
+    "cellData": "单元格数据",
+    "fullData": "完整数据",
+    "row": "行",
+    "dataLength": "数据长度：{{length}} 个字符",
     "queryReturnedNoRows": "查询执行成功但未返回任何行",
     "executing": "正在执行",
     "noData": "无可用数据",

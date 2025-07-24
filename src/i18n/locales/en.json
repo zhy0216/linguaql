@@ -18,7 +18,9 @@
     "confirm": "Confirm",
     "close": "Close",
     "page": "Page",
-    "null": "NULL"
+    "null": "NULL",
+    "showMore": "Show More",
+    "copy": "Copy"
   },
   "database": {
     "connection": "Database Connection",
@@ -118,6 +120,10 @@
     "noResultsFound": "No results found",
     "noQueryExecuted": "No query executed yet",
     "enterQueryToStart": "Enter a query above to get started",
+    "cellData": "Cell Data",
+    "fullData": "Full Data",
+    "row": "Row",
+    "dataLength": "Data length: {{length}} characters",
     "queryReturnedNoRows": "Query executed successfully but returned no rows",
     "executing": "Executing",
     "noData": "No data available",

@@ -20,7 +20,8 @@
     "page": "页",
     "null": "NULL",
     "showMore": "显示更多",
-    "copy": "复制"
+    "copy": "复制",
+    "copied": "已复制"
   },
   "database": {
     "connection": "数据库连接",

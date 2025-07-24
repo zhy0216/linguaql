@@ -43,11 +43,13 @@ const TableCellContent: React.FC<TableCellContentProps> = ({
         {isTruncated && (
           <Button
             size="xs"
-            color="blue"
+            color="gray"
             onClick={handleShowMore}
-            className="text-xs px-2 py-1 min-w-fit flex-shrink-0"
+            className="text-xs p-0 min-w-fit flex-shrink-0"
+            outline
+            style={{ padding: '0px 2px 5px 2px', height: '12px' }}
           >
-            {t('common.showMore')}
+            ...
           </Button>
         )}
       </div>

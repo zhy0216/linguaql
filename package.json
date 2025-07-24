@@ -13,6 +13,7 @@
     "postinstall": "flowbite-react patch"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-sql": "^6.9.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
@@ -22,6 +23,7 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-sql": "^2.3.0",
+    "@uiw/codemirror-theme-github": "^4.24.1",
     "@uiw/react-codemirror": "^4.24.1",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",

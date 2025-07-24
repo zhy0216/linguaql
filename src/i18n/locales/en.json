@@ -20,7 +20,8 @@
     "page": "Page",
     "null": "NULL",
     "showMore": "Show More",
-    "copy": "Copy"
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "database": {
     "connection": "Database Connection",

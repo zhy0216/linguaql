@@ -113,7 +113,7 @@ const QueryResultsView: React.FC<QueryResultsViewProps> = ({
                 filterConfigs={[]}
                 onSort={handleSort}
                 showFilterInfo={false}
-                showingRowCount={true}
+                rowCount={queryResult.rows.length}
               />
             </div>
           )}

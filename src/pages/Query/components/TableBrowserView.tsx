@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pagination } from 'flowbite-react';
 import ResultsTable from './ResultsTable';
 import FilterControls from './FilterControls';
-import { QueryResult, DatabaseTable } from '@/services/DBService';
+import {
+  DatabaseTable,
+  PaginatedTableResult,
+  PaginatedTableRequest,
+  TableFilter,
+  TableSort,
+  dbService,
+} from '@/services/DBService';
 import { TableColumnInfo } from '../../../types/database';
 
-interface SortConfig {
-  column: string;
-  direction: 'asc' | 'desc';
-}
-
+// Re-export types for compatibility with existing filter controls
 export type FilterOperator =
   | 'equals'
   | 'contains'
@@ -30,196 +33,219 @@ interface FilterConfig {
   value: string;
 }
 
-interface Pagination {
-  page: number;
-  pageSize: number;
-  total?: number;
+interface SortConfig {
+  column: string;
+  direction: 'asc' | 'desc';
 }
 
 interface TableBrowserViewProps {
-  // Table data display
   selectedTable: DatabaseTable;
-  tableData: QueryResult | null;
-  filteredAndSortedData: QueryResult | null;
-  isLoadingTableData: boolean;
   currentTableColumnInfos?: TableColumnInfo[];
-
-  // Filtering and sorting
-  sortConfig: SortConfig | null;
-  filterConfigs: FilterConfig[];
-  onSort: (column: string) => void;
-  onAddFilter: () => void;
-  onUpdateFilter: (index: number, updates: Partial<FilterConfig>) => void;
-  onRemoveFilter: (index: number) => void;
-  onClearAllFilters: () => void;
-  applyFilterAndSort: (data: QueryResult) => QueryResult;
-
-  // Pagination
-  pagination: Pagination;
-  onLoadTableData: (table: DatabaseTable | null, page?: number, pageSize?: number) => void;
 }
 
 const TableBrowserView: React.FC<TableBrowserViewProps> = ({
   selectedTable,
-  tableData,
-  filteredAndSortedData,
-  isLoadingTableData,
   currentTableColumnInfos,
-  sortConfig,
-  filterConfigs,
-  onSort,
-  onAddFilter,
-  onUpdateFilter,
-  onRemoveFilter,
-  onClearAllFilters,
-  // applyFilterAndSort, // Not used directly in this component
-  // pagination, // Not used with current ResultsTable interface
-  // onLoadTableData, // Not used with current ResultsTable interface
 }) => {
   const { t } = useTranslation();
 
-  // Pagination state
+  // State for server-side pagination and filtering
+  const [tableData, setTableData] = useState<PaginatedTableResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50); // Fixed page size, can be made configurable later
+  const [pageSize] = useState(50);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([]);
 
-  // Reset to first page when data changes
+  // Convert FilterConfig to TableFilter
+  const convertFiltersToTableFilters = useCallback((filters: FilterConfig[]): TableFilter[] => {
+    return filters
+      .filter(f => f.column && f.value.trim())
+      .map(f => ({
+        column: f.column,
+        operator: f.operator,
+        value: f.value,
+      }));
+  }, []);
+
+  // Convert SortConfig to TableSort
+  const convertSortToTableSort = useCallback((sort: SortConfig | null): TableSort | undefined => {
+    return sort
+      ? {
+          column: sort.column,
+          direction: sort.direction,
+        }
+      : undefined;
+  }, []);
+
+  // Load table data with current filters, sorting, and pagination
+  const loadTableData = useCallback(async () => {
+    if (!selectedTable) return;
+
+    setIsLoading(true);
+    try {
+      const request: PaginatedTableRequest = {
+        schema: selectedTable.schema,
+        tableName: selectedTable.name,
+        page: currentPage,
+        pageSize,
+        filters: convertFiltersToTableFilters(filterConfigs),
+        sort: convertSortToTableSort(sortConfig),
+      };
+
+      const result = await dbService.getPaginatedTableData(request);
+      setTableData(result);
+    } catch (error) {
+      console.error('Failed to load table data:', error);
+      setTableData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    selectedTable,
+    currentPage,
+    pageSize,
+    filterConfigs,
+    sortConfig,
+    convertFiltersToTableFilters,
+    convertSortToTableSort,
+  ]);
+
+  // Load data when dependencies change
+  useEffect(() => {
+    loadTableData();
+  }, [loadTableData]);
+
+  // Reset to first page when filters or sort change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [filterConfigs, sortConfig]);
+
+  // Reset state when table changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [filteredAndSortedData, tableData]);
+    setSortConfig(null);
+    setFilterConfigs([]);
+    setTableData(null);
+  }, [selectedTable]);
+
+  // Filter management functions
+  const handleAddFilter = useCallback(() => {
+    const availableColumns = tableData?.columns || [];
+    if (availableColumns.length > 0) {
+      setFilterConfigs(prev => [
+        ...prev,
+        {
+          column: availableColumns[0],
+          operator: 'contains',
+          value: '',
+        },
+      ]);
+    }
+  }, [tableData?.columns]);
+
+  const handleUpdateFilter = useCallback((index: number, updates: Partial<FilterConfig>) => {
+    setFilterConfigs(prev =>
+      prev.map((filter, i) => (i === index ? { ...filter, ...updates } : filter))
+    );
+  }, []);
+
+  const handleRemoveFilter = useCallback((index: number) => {
+    setFilterConfigs(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleClearAllFilters = useCallback(() => {
+    setFilterConfigs([]);
+  }, []);
+
+  // Sort handling
+  const handleSort = useCallback((column: string) => {
+    setSortConfig(prev => {
+      if (prev?.column === column) {
+        return prev.direction === 'asc' ? { column, direction: 'desc' } : null; // Remove sort on third click
+      }
+      return { column, direction: 'asc' };
+    });
+  }, []);
+
+  // Page change handling
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
 
   // Get available columns for filtering
   const getAvailableColumns = () => {
-    const data = filteredAndSortedData || tableData;
-    return data?.columns || [];
+    return tableData?.columns || [];
   };
 
-  // Calculate paginated data
-  const paginatedData = useMemo(() => {
-    const data = filteredAndSortedData || tableData;
-    if (!data || !data.rows) return null;
+  const noData = !tableData || tableData.rows.length === 0;
 
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedRows = data.rows.slice(startIndex, endIndex);
-
-    return {
-      ...data,
-      rows: paginatedRows,
-    };
-  }, [filteredAndSortedData, tableData, currentPage, pageSize]);
-
-  // Calculate total pages
-  const totalPages = useMemo(() => {
-    const data = filteredAndSortedData || tableData;
-    if (!data || !data.rows) return 0;
-    return Math.ceil(data.rows.length / pageSize);
-  }, [filteredAndSortedData, tableData, pageSize]);
-
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500 dark:text-gray-400">{t('query.loadingTableData')}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      <div className="flex-1 flex flex-col">
-        {/* Filter Controls - Always show in table browser mode */}
-        {(filteredAndSortedData || tableData) && (
-          <FilterControls
+    <div className="space-y-4">
+      {/* Filter Controls */}
+      <FilterControls
+        filterConfigs={filterConfigs}
+        availableColumns={getAvailableColumns()}
+        columnInfos={currentTableColumnInfos}
+        onAddFilter={handleAddFilter}
+        onUpdateFilter={handleUpdateFilter}
+        onRemoveFilter={handleRemoveFilter}
+        onClearAllFilters={handleClearAllFilters}
+      />
+
+      {/* Status and Results */}
+      {!noData && (
+        <div className="space-y-2 pl-3">
+          {/* Status Bar */}
+          <h3 className="text-sm font-semibold mb-2">
+            {selectedTable.schema}.{selectedTable.name}
+            {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
+              <span className="ml-2 text-xs text-blue-600">
+                ({filterConfigs.filter(f => f.column && f.value).length} filter
+                {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
+              </span>
+            )}
+          </h3>
+
+          {/* Results Table */}
+          <ResultsTable
+            data={{
+              columns: tableData.columns,
+              rows: tableData.rows,
+            }}
+            sortConfig={sortConfig}
             filterConfigs={filterConfigs}
-            availableColumns={getAvailableColumns()}
-            columnInfos={currentTableColumnInfos}
-            onAddFilter={onAddFilter}
-            onUpdateFilter={onUpdateFilter}
-            onRemoveFilter={onRemoveFilter}
-            onClearAllFilters={onClearAllFilters}
+            onSort={handleSort}
+            showFilterInfo={false}
+            rowCount={tableData.totalCount}
+            maxHeight="calc(100vh - 180px)"
           />
-        )}
 
-        {/* Table Display */}
-        <div className="flex-1 p-3 overflow-auto">
-          {paginatedData && (
-            <div>
-              <h3 className="text-sm font-semibold mb-2">
-                {selectedTable.schema}.{selectedTable.name}
-                {isLoadingTableData && (
-                  <span className="ml-2 text-xs text-gray-500">({t('common.loading')}...)</span>
-                )}
-                {filterConfigs.length > 0 && filterConfigs.some(f => f.column && f.value) && (
-                  <span className="ml-2 text-xs text-blue-600">
-                    ({filterConfigs.filter(f => f.column && f.value).length} filter
-                    {filterConfigs.filter(f => f.column && f.value).length > 1 ? 's' : ''} applied)
-                  </span>
-                )}
-              </h3>
-              <ResultsTable
-                data={paginatedData}
-                sortConfig={sortConfig}
-                filterConfigs={filterConfigs}
-                onSort={onSort}
-                showFilterInfo={true}
-                originalRowCount={tableData?.rows.length}
-                showingRowCount={false} // Disable default row count since we'll show pagination info
-                maxHeight="calc(100vh - 220px)" // Reduced height to accommodate pagination
+          {/* Pagination */}
+          {tableData.totalPages > 1 && (
+            <div className="absolute right-4 bottom-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={tableData.totalPages}
+                onPageChange={handlePageChange}
+                showIcons
+                className="flex items-center"
               />
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-xs text-gray-500">
-                    {t('query.showingRowsRange', {
-                      start: (currentPage - 1) * pageSize + 1,
-                      end: Math.min(
-                        currentPage * pageSize,
-                        (filteredAndSortedData || tableData)?.rows.length || 0
-                      ),
-                      total: (filteredAndSortedData || tableData)?.rows.length || 0,
-                    })}
-                    {filterConfigs.some(f => f.column && f.value) && tableData && (
-                      <span className="ml-2">
-                        ({t('query.filteredFromTotal', { total: tableData.rows.length })})
-                      </span>
-                    )}
-                  </div>
-                  <Pagination
-                    className="flex items-center -space-x-px text-sm"
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    showIcons
-                  />
-                </div>
-              )}
-
-              {/* Show pagination info even when there's only one page */}
-              {totalPages <= 1 && (filteredAndSortedData || tableData) && (
-                <div className="mt-4 text-xs text-gray-500">
-                  Showing {(filteredAndSortedData || tableData)?.rows.length || 0} rows
-                  {filterConfigs.some(f => f.column && f.value) && tableData && (
-                    <span className="ml-2">
-                      ({t('query.filteredFromTotal', { total: tableData.rows.length })})
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isLoadingTableData && !filteredAndSortedData && (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">{t('common.loading')}...</div>
-            </div>
-          )}
-
-          {/* No Data State */}
-          {!isLoadingTableData && !filteredAndSortedData && (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">{t('query.noData')}</div>
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

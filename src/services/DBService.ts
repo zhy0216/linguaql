@@ -16,6 +16,46 @@ export interface TableDataRequest {
   pageSize: number;
 }
 
+export interface TableFilter {
+  column: string;
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith'
+    | 'gt'
+    | 'gte'
+    | 'lt'
+    | 'lte'
+    | 'notEquals'
+    | 'isEmpty'
+    | 'isNotEmpty';
+  value: string;
+}
+
+export interface TableSort {
+  column: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface PaginatedTableRequest {
+  schema: string;
+  tableName: string;
+  page: number;
+  pageSize: number;
+  filters?: TableFilter[];
+  sort?: TableSort;
+}
+
+export interface PaginatedTableResult {
+  columns: string[];
+  rows: any[][];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}
+
 export interface QueryResult {
   columns: string[];
   rows: any[][];
@@ -331,6 +371,151 @@ export class DBService {
       console.error('Failed to get table row count:', error);
       return 0;
     }
+  }
+
+  /**
+   * Get paginated table data with filtering and sorting
+   */
+  async getPaginatedTableData(request: PaginatedTableRequest): Promise<PaginatedTableResult> {
+    try {
+      const db = await this.getConnection();
+      const { schema, tableName, page, pageSize, filters, sort } = request;
+
+      // Build WHERE clause from filters
+      const { whereClause, params } = this.buildWhereClause(filters || []);
+
+      // Build ORDER BY clause from sort
+      const orderByClause = sort ? `ORDER BY "${sort.column}" ${sort.direction.toUpperCase()}` : '';
+
+      // Calculate offset
+      const offset = (page - 1) * pageSize;
+
+      // Build count query
+      const countQuery = `
+        SELECT COUNT(*) as count 
+        FROM "${schema}"."${tableName}"
+        ${whereClause}
+      `;
+
+      // Build data query
+      const dataQuery = `
+        SELECT * 
+        FROM "${schema}"."${tableName}"
+        ${whereClause}
+        ${orderByClause}
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
+
+      // Execute count query
+      const countResult = (await db.select(countQuery, params)) as any[];
+      const totalCount = countResult[0]?.count || 0;
+
+      // Execute data query
+      const dataParams = [...params, pageSize, offset];
+      const dataResult = (await db.select(dataQuery, dataParams)) as any[];
+
+      // Get column names from the first row or from table schema
+      let columns: string[] = [];
+      if (dataResult.length > 0) {
+        columns = Object.keys(dataResult[0]);
+      } else {
+        // If no data, get columns from table schema
+        const columnInfo = await this.getTableColumns(schema, tableName);
+        columns = columnInfo.map(col => col.column_name);
+      }
+
+      // Convert rows to array format
+      const rows = dataResult.map(row => columns.map(col => row[col]));
+
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      return {
+        columns,
+        rows,
+        totalCount,
+        totalPages,
+        currentPage: page,
+        pageSize,
+      };
+    } catch (error) {
+      console.error('Failed to get paginated table data:', error);
+      throw new Error(`Failed to get paginated table data: ${error}`);
+    }
+  }
+
+  /**
+   * Build WHERE clause from filters
+   */
+  private buildWhereClause(filters: TableFilter[]): { whereClause: string; params: any[] } {
+    if (!filters || filters.length === 0) {
+      return { whereClause: '', params: [] };
+    }
+
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    for (const filter of filters) {
+      const { column, operator, value } = filter;
+      const columnRef = `"${column}"`;
+
+      switch (operator) {
+        case 'equals':
+          conditions.push(`${columnRef} = $${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+          break;
+        case 'notEquals':
+          conditions.push(`${columnRef} != $${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+          break;
+        case 'contains':
+          conditions.push(`${columnRef}::text ILIKE $${paramIndex}`);
+          params.push(`%${value}%`);
+          paramIndex++;
+          break;
+        case 'startsWith':
+          conditions.push(`${columnRef}::text ILIKE $${paramIndex}`);
+          params.push(`${value}%`);
+          paramIndex++;
+          break;
+        case 'endsWith':
+          conditions.push(`${columnRef}::text ILIKE $${paramIndex}`);
+          params.push(`%${value}`);
+          paramIndex++;
+          break;
+        case 'gt':
+          conditions.push(`${columnRef} > $${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+          break;
+        case 'gte':
+          conditions.push(`${columnRef} >= $${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+          break;
+        case 'lt':
+          conditions.push(`${columnRef} < $${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+          break;
+        case 'lte':
+          conditions.push(`${columnRef} <= $${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+          break;
+        case 'isEmpty':
+          conditions.push(`(${columnRef} IS NULL OR ${columnRef}::text = '')`);
+          break;
+        case 'isNotEmpty':
+          conditions.push(`(${columnRef} IS NOT NULL AND ${columnRef}::text != '')`);
+          break;
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    return { whereClause, params };
   }
 
   /**

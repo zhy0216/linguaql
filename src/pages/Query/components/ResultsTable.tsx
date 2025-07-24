@@ -35,7 +35,7 @@ interface ResultsTableProps {
   onSort: (column: string) => void;
   showFilterInfo?: boolean;
   originalRowCount?: number;
-  showingRowCount?: boolean;
+  rowCount?: number;
   maxHeight?: string;
 }
 
@@ -45,8 +45,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   filterConfigs,
   onSort,
   showFilterInfo = false,
-  originalRowCount,
-  showingRowCount,
+  rowCount,
   maxHeight,
 }) => {
   const { t } = useTranslation();
@@ -124,14 +123,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           </TableBody>
         </Table>
       </div>
-      {showingRowCount && (
+      {rowCount !== undefined && (
         <div className="mt-4 text-xs text-gray-500">
-          {t('query.showingRows', { count: data.rows.length })}
-          {filterConfigs.some(f => f.column && f.value) && originalRowCount && (
-            <span className="ml-2">
-              ({t('query.filteredFromTotal', { total: originalRowCount })})
-            </span>
-          )}
+          {t('query.showingRows', { count: rowCount })}
         </div>
       )}
     </div>

@@ -6,12 +6,7 @@ import { sql } from '@codemirror/lang-sql';
 import { EditorView } from '@codemirror/view';
 import { keymap } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
-import dbService, {
-  DatabaseTable,
-  TableDataRequest,
-  QueryResult,
-  DBService,
-} from '../../services/DBService';
+import dbService, { DatabaseTable, QueryResult, DBService } from '../../services/DBService';
 import { TableColumnInfo } from '../../types/database';
 import { aiService } from '../../services/AIService';
 import { useQuerySessionStore } from '../../stores/querySessionStore';
@@ -26,7 +21,6 @@ import {
   getCurrentSqlStatement,
   getCurrentLineStatement,
 } from './queryUtils';
-import { useTableFiltering, useProcessedData } from './useTableFiltering';
 
 interface QueryProps {}
 
@@ -57,33 +51,14 @@ const Query: React.FC<QueryProps> = () => {
   const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([]);
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
 
-  // Use table filtering hook
-  const {
-    sortConfig,
-    filterConfigs,
-    pagination,
-    setPagination,
-    handleSort,
-    addFilter,
-    updateFilter,
-    removeFilter,
-    clearAllFilters,
-    applyFilterAndSort,
-  } = useTableFiltering({ initialPageSize: 100 });
-
-  // State for table data
-  const [tableData, setTableData] = useState<QueryResult | null>(null);
+  // State for table column info (still needed for TableBrowserView)
   const [currentTableColumnInfos, setCurrentTableColumnInfos] = useState<TableColumnInfo[]>([]);
-  const [isLoadingTableData, setIsLoadingTableData] = useState(false);
 
   // State for query input and results
   const [queryInput, setQueryInput] = useState('');
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [queryHistory, setQueryHistory] = useState<string[]>([]);
-
-  // Use processed data hook for filtered and sorted data
-  const filteredAndSortedData = useProcessedData(tableData, applyFilterAndSort);
 
   // Modal state for SQL confirmation
   const [showSQLConfirmModal, setShowSQLConfirmModal] = useState(false);
@@ -132,7 +107,6 @@ const Query: React.FC<QueryProps> = () => {
     setActiveSession(selectedServerId, sessionId);
     // Clear selected table when selecting a session
     setSelectedTable(null);
-    setTableData(null);
   };
 
   // Update session when query input changes
@@ -165,8 +139,8 @@ const Query: React.FC<QueryProps> = () => {
     }
   };
 
-  // Load table data with pagination when a table is clicked
-  const loadTableData = async (table: DatabaseTable, page: number = 1, pageSize: number = 100) => {
+  // Handle table selection - TableBrowserView will handle data loading internally
+  const loadTableData = async (table: DatabaseTable) => {
     if (!table) return;
 
     // Clear active session when selecting a table
@@ -175,48 +149,14 @@ const Query: React.FC<QueryProps> = () => {
     }
 
     setSelectedTable(table);
-    setIsLoadingTableData(true);
-    setTableData(null); // Clear previous data
 
     try {
-      // Create the request object
-      const request: TableDataRequest = {
-        schema: table.schema,
-        name: table.name,
-        page: page,
-        pageSize: pageSize,
-      };
-
-      // Get table data and column information in parallel
-      const [result, columnInfos] = await Promise.all([
-        dbService.getTableData(request),
-        dbService.getTableColumns(table.schema, table.name),
-      ]);
-
-      // Extract column names from the first row
-      const columns = result.length > 0 ? Object.keys(result[0]) : [];
-
-      // Convert rows to array format expected by QueryResult
-      const rows = result.map((row: any) => columns.map(col => row[col]));
-
-      // Store column information for filtering
+      // Get column information for the selected table
+      const columnInfos = await dbService.getTableColumns(table.schema, table.name);
       setCurrentTableColumnInfos(columnInfos);
-
-      setTableData({
-        columns,
-        rows,
-      });
-
-      setPagination({
-        page,
-        pageSize,
-        // We don't have total count in this implementation yet
-      });
     } catch (error) {
-      console.error('Failed to load table data:', error);
-      setTableData(null);
-    } finally {
-      setIsLoadingTableData(false);
+      console.error('Failed to load table column info:', error);
+      setCurrentTableColumnInfos([]);
     }
   };
 
@@ -511,22 +451,7 @@ const Query: React.FC<QueryProps> = () => {
           {selectedTable && !activeSessionId && (
             <TableBrowserView
               selectedTable={selectedTable}
-              tableData={tableData}
-              filteredAndSortedData={filteredAndSortedData}
-              isLoadingTableData={isLoadingTableData}
               currentTableColumnInfos={currentTableColumnInfos}
-              sortConfig={sortConfig}
-              filterConfigs={filterConfigs}
-              onSort={handleSort}
-              onAddFilter={addFilter}
-              onUpdateFilter={updateFilter}
-              onRemoveFilter={removeFilter}
-              onClearAllFilters={clearAllFilters}
-              applyFilterAndSort={applyFilterAndSort}
-              pagination={pagination}
-              onLoadTableData={(table: DatabaseTable | null, page?: number, pageSize?: number) =>
-                table && loadTableData(table, page, pageSize)
-              }
             />
           )}
 

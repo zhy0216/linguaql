@@ -4,6 +4,8 @@ import CodeMirror from '@uiw/react-codemirror';
 import { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { EditorView } from '@codemirror/view';
+import { keymap } from '@codemirror/view';
+import { Prec } from '@codemirror/state';
 import dbService, {
   DatabaseTable,
   TableDataRequest,
@@ -449,7 +451,25 @@ const Query: React.FC<QueryProps> = () => {
                     ref={codeMirrorRef}
                     value={queryInput}
                     onChange={handleQueryInputChange}
-                    extensions={[sql(), sqlStatementHighlight, EditorView.lineWrapping]}
+                    extensions={[
+                      sql(),
+                      sqlStatementHighlight,
+                      EditorView.lineWrapping,
+                      Prec.high(
+                        keymap.of([
+                          {
+                            key: 'Mod-Enter',
+                            run: () => {
+                              // Only execute if not already executing and has query input
+                              if (!isExecuting && queryInput.trim()) {
+                                executeQuery();
+                              }
+                              return true; // Prevent default behavior
+                            },
+                          },
+                        ])
+                      ),
+                    ]}
                     placeholder={t('query.enterQuery')}
                     theme="light"
                     basicSetup={{

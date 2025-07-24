@@ -47,9 +47,9 @@ const QueryToolbar: React.FC<QueryToolbarProps> = ({
         </Button>
         <Button
           size="xs"
-          color="success"
           onClick={executeQuery}
           disabled={isExecuting || !queryInput.trim()}
+          title={`${t('query.execute')} (${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+Enter)`}
         >
           {t('query.execute')}
         </Button>

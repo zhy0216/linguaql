@@ -79,7 +79,6 @@ const Query: React.FC<QueryProps> = () => {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [queryHistory, setQueryHistory] = useState<string[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
 
   // Use processed data hook for filtered and sorted data
   const filteredAndSortedData = useProcessedData(tableData, applyFilterAndSort);
@@ -394,7 +393,6 @@ const Query: React.FC<QueryProps> = () => {
   // Select a query from history
   const selectHistoryQuery = (query: string) => {
     setQueryInput(query);
-    setShowHistory(false);
   };
 
   return (
@@ -452,8 +450,6 @@ const Query: React.FC<QueryProps> = () => {
 
               {/* Toolbar */}
               <QueryToolbar
-                showHistory={showHistory}
-                setShowHistory={setShowHistory}
                 queryHistory={queryHistory}
                 selectHistoryQuery={selectHistoryQuery}
                 cancelQuery={cancelQuery}

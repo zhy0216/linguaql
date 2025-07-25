@@ -7,7 +7,6 @@ Transform natural language into powerful SQL queries with AI. Query your Postgre
 > **`LinguaQL ::= SQL | Natural Language`**
 
 ![LinguaQL Screenshot](./screenshots/main-interface.png)
-_Main interface showing query editor and results_
 
 ## ✨ Key Features
 
@@ -33,22 +32,6 @@ For detailed development setup, architecture overview, and contribution guidelin
 ### Main Query Interface
 
 ![Main Interface](./screenshots/main-query-interface.png)
-
-### AI Natural Language Processing
-
-![AI Processing](./screenshots/ai-natural-language.png)
-
-### Database Connection Management
-
-![Connection Management](./screenshots/connection-management.png)
-
-### Advanced Settings
-
-![Settings Panel](./screenshots/settings-panel.png)
-
-### Multi-Filter Data Analysis
-
-![Data Analysis](./screenshots/data-analysis.png)
 
 ## 🤝 Acknowledgments
 

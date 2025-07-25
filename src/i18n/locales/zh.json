@@ -21,7 +21,9 @@
     "null": "NULL",
     "showMore": "显示更多",
     "copy": "复制",
-    "copied": "已复制"
+    "copied": "已复制",
+    "true": "True",
+    "false": "False"
   },
   "database": {
     "connection": "数据库连接",
@@ -85,6 +87,9 @@
     "column": "列",
     "operator": "操作符",
     "value": "值",
+    "selectColumn": "选择列",
+    "selectValue": "选择值",
+    "filterValue": "筛选值",
     "operators": {
       "contains": "包含",
       "equals": "等于",
@@ -107,8 +112,6 @@
     "execute": "执行",
     "clearAll": "清除全部",
     "noFiltersApplied": "未应用筛选器",
-    "selectColumn": "选择列",
-    "filterValue": "筛选值",
     "filter": "筛选器",
     "applied": "已应用",
     "noDataMatchesFilters": "没有数据匹配筛选条件",

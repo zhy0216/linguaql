@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Select, TextInput } from 'flowbite-react';
 import { TableColumnInfo } from '../../../types/database';
+import { validateFilterValue } from '../../../utils/filterUtils';
 
 export type FilterOperator =
   | 'equals'
@@ -169,9 +170,14 @@ const getAvailableOperators = (dataType: string): FilterOperator[] => {
 
 // Helper function to get column data type
 const getColumnDataType = (columnName: string, columnInfos?: TableColumnInfo[]): string => {
-  if (!columnInfos) return 'unknown';
-  const columnInfo = columnInfos.find(col => col.column_name === columnName);
+  const columnInfo = columnInfos?.find(col => col.column_name === columnName);
   return columnInfo?.data_type || 'unknown';
+};
+
+// Helper function to check if column is boolean type
+const isBooleanColumn = (columnName: string, columnInfos?: TableColumnInfo[]): boolean => {
+  const dataType = getColumnDataType(columnName, columnInfos).toLowerCase();
+  return dataType.includes('boolean') || dataType.includes('bool');
 };
 
 const FilterControls: React.FC<FilterControlsProps> = ({
@@ -187,6 +193,49 @@ const FilterControls: React.FC<FilterControlsProps> = ({
   const { t } = useTranslation();
   const allOperatorOptions = getOperatorOptions(t);
 
+  // Track validation errors for each filter
+  const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
+
+  // Validate filter value when it changes
+  const handleValueChange = (index: number, value: string) => {
+    const filter = filterConfigs[index];
+    if (filter.column && value) {
+      const validation = validateFilterValue(value, filter.column, columnInfos);
+      setValidationErrors(prev => ({
+        ...prev,
+        [index]: validation.isValid ? '' : validation.errorMessage || 'Invalid value',
+      }));
+    } else {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[index];
+        return newErrors;
+      });
+    }
+    onUpdateFilter(index, { value });
+  };
+
+  // Clear validation error when column changes
+  const handleColumnChange = (index: number, column: string) => {
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[index];
+      return newErrors;
+    });
+    onUpdateFilter(index, { column });
+  };
+
+  // Check if there are any validation errors
+  const hasValidationErrors = Object.values(validationErrors).some(error => error);
+
+  // Enhanced apply filters function with validation
+  const handleApplyFilters = () => {
+    if (hasValidationErrors) {
+      return; // Don't apply if there are validation errors
+    }
+    onApplyFilters();
+  };
+
   return (
     <div className="p-3 border-b border-gray-200 bg-gray-50">
       <div className="flex gap-8 items-center mb-2">
@@ -197,7 +246,12 @@ const FilterControls: React.FC<FilterControlsProps> = ({
           </Button>
           {filterConfigs.length > 0 && (
             <>
-              <Button size="xs" color="blue" onClick={onApplyFilters}>
+              <Button
+                size="xs"
+                color={hasValidationErrors ? 'gray' : 'blue'}
+                onClick={handleApplyFilters}
+                disabled={hasValidationErrors}
+              >
                 {t('query.applyFilters')}
               </Button>
               <Button size="xs" color="gray" onClick={onClearAllFilters}>
@@ -217,7 +271,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
               <Select
                 sizing="sm"
                 value={filter.column}
-                onChange={e => onUpdateFilter(index, { column: e.target.value })}
+                onChange={e => handleColumnChange(index, e.target.value)}
                 className="min-w-[120px]"
               >
                 <option value="">{t('query.selectColumn')}</option>
@@ -250,20 +304,39 @@ const FilterControls: React.FC<FilterControlsProps> = ({
                 })()}
               </Select>
               {operatorRequiresValue(filter.operator) && (
-                <TextInput
-                  type="text"
-                  placeholder={t('query.filterValue')}
-                  sizing="sm"
-                  className="flex-1 min-w-[100px] max-w-xs"
-                  value={filter.value}
-                  onChange={e => onUpdateFilter(index, { value: e.target.value })}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      onApplyFilters();
-                    }
-                  }}
-                  disabled={!filter.column}
-                />
+                <div className="flex-1 min-w-[100px] max-w-xs">
+                  {isBooleanColumn(filter.column, columnInfos) ? (
+                    <Select
+                      sizing="sm"
+                      value={filter.value}
+                      onChange={e => handleValueChange(index, e.target.value)}
+                      disabled={!filter.column}
+                      color={validationErrors[index] ? 'failure' : undefined}
+                    >
+                      <option value="">{t('query.selectValue')}</option>
+                      <option value="true">{t('common.true')}</option>
+                      <option value="false">{t('common.false')}</option>
+                    </Select>
+                  ) : (
+                    <TextInput
+                      type="text"
+                      placeholder={t('query.filterValue')}
+                      sizing="sm"
+                      value={filter.value}
+                      onChange={e => handleValueChange(index, e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleApplyFilters();
+                        }
+                      }}
+                      disabled={!filter.column}
+                      color={validationErrors[index] ? 'failure' : undefined}
+                    />
+                  )}
+                  {validationErrors[index] && (
+                    <div className="text-xs text-red-500 mt-1">{validationErrors[index]}</div>
+                  )}
+                </div>
               )}
               <Button size="xs" color="failure" onClick={() => onRemoveFilter(index)}>
                 {t('common.remove')}

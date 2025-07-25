@@ -2,6 +2,7 @@ import Database from '@tauri-apps/plugin-sql';
 import { DatabaseConfig, ConnectionResult, TableColumnInfo } from '../types/database';
 import { Parser } from 'node-sql-parser';
 import { useSettingsStore } from '../stores/settingsStore';
+import { convertFilterValue } from '../utils/filterUtils';
 import i18n from 'i18next';
 
 export interface DatabaseTable {
@@ -381,8 +382,11 @@ export class DBService {
       const db = await this.getConnection();
       const { schema, tableName, page, pageSize, filters, sort } = request;
 
-      // Build WHERE clause from filters
-      const { whereClause, params } = this.buildWhereClause(filters || []);
+      // Get column information for type conversion
+      const columnInfos = await this.getTableColumns(schema, tableName);
+
+      // Build WHERE clause from filters with column type information
+      const whereClause = this.buildWhereClause(filters || [], columnInfos);
 
       // Build ORDER BY clause from sort
       const orderByClause = sort ? `ORDER BY "${sort.column}" ${sort.direction.toUpperCase()}` : '';
@@ -403,26 +407,18 @@ export class DBService {
         FROM "${schema}"."${tableName}"
         ${whereClause}
         ${orderByClause}
-        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+        LIMIT ${pageSize} OFFSET ${offset}
       `;
 
       // Execute count query
-      const countResult = (await db.select(countQuery, params)) as any[];
+      const countResult = (await db.select(countQuery)) as any[];
       const totalCount = countResult[0]?.count || 0;
 
       // Execute data query
-      const dataParams = [...params, pageSize, offset];
-      const dataResult = (await db.select(dataQuery, dataParams)) as any[];
+      const dataResult = (await db.select(dataQuery)) as any[];
 
-      // Get column names from the first row or from table schema
-      let columns: string[] = [];
-      if (dataResult.length > 0) {
-        columns = Object.keys(dataResult[0]);
-      } else {
-        // If no data, get columns from table schema
-        const columnInfo = await this.getTableColumns(schema, tableName);
-        columns = columnInfo.map(col => col.column_name);
-      }
+      // Get column names from column info
+      const columns = columnInfos.map(col => col.column_name);
 
       // Convert rows to array format
       const rows = dataResult.map(row => columns.map(col => row[col]));
@@ -444,66 +440,49 @@ export class DBService {
   }
 
   /**
-   * Build WHERE clause from filters
+   * Build WHERE clause from filters with direct value embedding
    */
-  private buildWhereClause(filters: TableFilter[]): { whereClause: string; params: any[] } {
+  private buildWhereClause(filters: TableFilter[], columnInfos?: TableColumnInfo[]): string {
     if (!filters || filters.length === 0) {
-      return { whereClause: '', params: [] };
+      return '';
     }
 
     const conditions: string[] = [];
-    const params: any[] = [];
-    let paramIndex = 1;
 
     for (const filter of filters) {
       const { column, operator, value } = filter;
       const columnRef = `"${column}"`;
 
+      // Convert value to appropriate type based on column data type
+      const convertedValue = convertFilterValue(value, column, columnInfos);
+
       switch (operator) {
         case 'equals':
-          conditions.push(`${columnRef} = $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
+          conditions.push(`${columnRef} = ${this.formatSQLValue(convertedValue)}`);
           break;
         case 'notEquals':
-          conditions.push(`${columnRef} != $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
+          conditions.push(`${columnRef} != ${this.formatSQLValue(convertedValue)}`);
           break;
         case 'contains':
-          conditions.push(`${columnRef}::text ILIKE $${paramIndex}`);
-          params.push(`%${value}%`);
-          paramIndex++;
+          conditions.push(`${columnRef}::text ILIKE ${this.formatSQLValue(`%${value}%`)}`);
           break;
         case 'startsWith':
-          conditions.push(`${columnRef}::text ILIKE $${paramIndex}`);
-          params.push(`${value}%`);
-          paramIndex++;
+          conditions.push(`${columnRef}::text ILIKE ${this.formatSQLValue(`${value}%`)}`);
           break;
         case 'endsWith':
-          conditions.push(`${columnRef}::text ILIKE $${paramIndex}`);
-          params.push(`%${value}`);
-          paramIndex++;
+          conditions.push(`${columnRef}::text ILIKE ${this.formatSQLValue(`%${value}`)}`);
           break;
         case 'gt':
-          conditions.push(`${columnRef} > $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
+          conditions.push(`${columnRef} > ${this.formatSQLValue(convertedValue)}`);
           break;
         case 'gte':
-          conditions.push(`${columnRef} >= $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
+          conditions.push(`${columnRef} >= ${this.formatSQLValue(convertedValue)}`);
           break;
         case 'lt':
-          conditions.push(`${columnRef} < $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
+          conditions.push(`${columnRef} < ${this.formatSQLValue(convertedValue)}`);
           break;
         case 'lte':
-          conditions.push(`${columnRef} <= $${paramIndex}`);
-          params.push(value);
-          paramIndex++;
+          conditions.push(`${columnRef} <= ${this.formatSQLValue(convertedValue)}`);
           break;
         case 'isEmpty':
           conditions.push(`(${columnRef} IS NULL OR ${columnRef}::text = '')`);
@@ -514,8 +493,34 @@ export class DBService {
       }
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    return { whereClause, params };
+    return conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  }
+
+  /**
+   * Format a value for direct embedding in SQL
+   */
+  private formatSQLValue(value: any): string {
+    if (value === null || value === undefined) {
+      return 'NULL';
+    }
+
+    if (typeof value === 'string') {
+      // Escape single quotes by doubling them
+      const escapedValue = value.replace(/'/g, "''");
+      return `'${escapedValue}'`;
+    }
+
+    if (typeof value === 'number') {
+      return value.toString();
+    }
+
+    if (typeof value === 'boolean') {
+      return value ? 'TRUE' : 'FALSE';
+    }
+
+    // For other types, convert to string and treat as string
+    const stringValue = String(value).replace(/'/g, "''");
+    return `'${stringValue}'`;
   }
 
   /**

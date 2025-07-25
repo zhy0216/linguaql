@@ -25,6 +25,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     setCurrentConfig: setConfig,
   } = useServerConfigStore();
 
+  const currentServer = servers.find(s => s.id === selectedServerId);
   // Local component state
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -59,7 +60,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     if (!config.host || !config.username) {
       setTestResult({
         success: false,
-        message: '请填写所有必需的字段（主机、用户名）',
+        message: t('database.fillRequiredFields'),
       });
       setTestSuccess(false);
       return;
@@ -76,7 +77,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     } catch (error) {
       setTestResult({
         success: false,
-        message: `测试连接时发生错误: ${error}`,
+        message: t('database.connectionTestError', { error }),
       });
       setTestSuccess(false);
     } finally {
@@ -88,7 +89,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     if (!config.host || !config.username) {
       setTestResult({
         success: false,
-        message: '请填写所有必需的字段（主机、用户名）',
+        message: t('database.fillRequiredFields'),
       });
       return;
     }
@@ -105,27 +106,12 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
     } catch (error) {
       setTestResult({
         success: false,
-        message: `连接数据库时发生错误: ${error}`,
+        message: t('database.connectionError', { error }),
       });
     } finally {
       setIsConnecting(false);
     }
   };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (selectedServerId && isDirty) {
-          saveCurrentServer();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedServerId, isDirty, config]);
 
   const addNewServer = () => {
     if (!newServerName.trim()) return;
@@ -153,7 +139,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
       // Parse PostgreSQL URL format: postgresql://username:password@host:port/database
       const url = new URL(serverUrl);
       if (url.protocol !== 'postgresql:' && url.protocol !== 'postgres:') {
-        throw new Error('Invalid PostgreSQL URL');
+        throw new Error(t('database.invalidPostgreSQLUrl'));
       }
 
       const newServer: ServerConfig = {
@@ -171,23 +157,29 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
       setServerUrl('');
       setShowUrlModal(false);
     } catch (error) {
-      alert('无效的 PostgreSQL URL 格式');
+      alert(t('database.invalidPostgreSQLUrl'));
     }
   };
 
   const selectServer = (server: ServerConfig) => {
-    const newConfig = {
+    setSelectedServer(server.id);
+    setConfig({
       host: server.host,
       port: server.port,
       username: server.username,
       password: server.password,
       database: server.database,
-    };
-    setConfig(newConfig);
-    setOriginalConfig(newConfig);
-    setSelectedServer(server.id);
+    });
+    setOriginalConfig({
+      host: server.host,
+      port: server.port,
+      username: server.username,
+      password: server.password,
+      database: server.database,
+    });
     setIsDirty(false);
     setTestResult(null);
+    setTestSuccess(false);
   };
 
   // Handle double click to connect and open query page
@@ -231,10 +223,25 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
   const saveCurrentServer = () => {
     if (!selectedServerId) return;
 
-    updateServer(selectedServerId, config);
+    if (!currentServer) return;
+
+    updateServer(selectedServerId, { ...currentServer, ...config });
     setOriginalConfig(config);
     setIsDirty(false);
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveCurrentServer();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [saveCurrentServer]);
 
   const clearSelection = () => {
     setSelectedServer(null);
@@ -323,7 +330,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
         </div>
 
         <div className="mt-4 pt-4 border-t border-indigo-100">
-          <div className="flex gap-2 w-full">
+          <div className="flex flex-col gap-2 w-full">
             <Button
               color="light"
               size="sm"
@@ -359,7 +366,28 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
             </h2>
 
             <div className="mb-4 flex items-center">
-              <Label htmlFor="host" className="flex items-center w-24">
+              <Label htmlFor="serverName" className="flex items-center w-40">
+                {t('database.serverName')}
+              </Label>
+              <Input
+                type="text"
+                id="serverName"
+                name="serverName"
+                value={currentServer?.name || ''}
+                onChange={e => {
+                  if (currentServer) {
+                    updateServer(selectedServerId, { ...currentServer, name: e.target.value });
+                    setIsDirty(true);
+                  }
+                }}
+                placeholder={t('database.enterServerName')}
+                className="w-full"
+                disabled={!selectedServerId}
+              />
+            </div>
+
+            <div className="mb-4 flex items-center">
+              <Label htmlFor="host" className="flex items-center w-40">
                 {t('database.hostAddress')} <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -375,7 +403,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
             </div>
 
             <div className="mb-4 flex items-center">
-              <Label htmlFor="port" className="flex items-center w-24">
+              <Label htmlFor="port" className="flex items-center w-40">
                 {t('database.port')}
               </Label>
               <Input
@@ -392,7 +420,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
             </div>
 
             <div className="mb-4 flex items-center">
-              <Label htmlFor="username" className="flex items-center w-24">
+              <Label htmlFor="username" className="flex items-center w-40">
                 {t('database.username')} <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -408,7 +436,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
             </div>
 
             <div className="mb-4 flex items-center">
-              <Label htmlFor="password" className="flex items-center w-24">
+              <Label htmlFor="password" className="flex items-center w-40">
                 {t('database.password')}
               </Label>
               <Input
@@ -417,14 +445,14 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                 name="password"
                 value={config.password}
                 onChange={handleInputChange}
-                placeholder="请输入密码"
+                placeholder={t('database.passwordPlaceholder')}
                 className="w-full"
               />
             </div>
 
             <div className="mb-4 flex items-center">
-              <Label htmlFor="database" className="flex items-center w-24">
-                数据库名称
+              <Label htmlFor="database" className="flex items-center w-40">
+                {t('database.database')}
               </Label>
               <Input
                 type="text"
@@ -432,7 +460,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                 name="database"
                 value={config.database}
                 onChange={handleInputChange}
-                placeholder="留空则使用默认数据库"
+                placeholder={t('database.databasePlaceholder')}
                 className="w-full"
               />
             </div>
@@ -444,7 +472,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                 disabled={isTestingConnection || isConnecting}
                 className="flex items-center"
               >
-                {isTestingConnection ? '测试中...' : '测试连接'}
+                {isTestingConnection ? t('database.testing') : t('database.testConnection')}
                 {testSuccess && !isTestingConnection && (
                   <span className="ml-2 text-green-600">✓</span>
                 )}
@@ -455,7 +483,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                 onClick={connectToDatabase}
                 disabled={isTestingConnection || isConnecting}
               >
-                {isConnecting ? '连接中...' : '连接'}
+                {isConnecting ? t('database.connecting') : t('database.connect')}
               </Button>
             </div>
 
@@ -474,29 +502,29 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
       {/* New Server Modal */}
       <Modal show={showNewServerModal} onClose={() => setShowNewServerModal(false)}>
         <div className="p-4 border-b border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
-          <h3 className="text-xl font-semibold">保存当前服务器配置</h3>
+          <h3 className="text-xl font-semibold">{t('database.saveCurrentServerConfig')}</h3>
         </div>
         <div className="p-4">
           <div className="mb-4">
             <div className="block mb-2">
-              <Label htmlFor="serverName">服务器名称</Label>
+              <Label htmlFor="serverName">{t('database.serverName')}</Label>
             </div>
             <Input
               id="serverName"
               type="text"
               value={newServerName}
               onChange={e => setNewServerName(e.target.value)}
-              placeholder="输入服务器名称"
+              placeholder={t('database.enterServerName')}
             />
           </div>
         </div>
         <div className="p-4 border-t border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
           <div className="flex gap-2 justify-end w-full">
             <Button color="light" onClick={() => setShowNewServerModal(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button color="blue" onClick={addNewServer} disabled={!newServerName.trim()}>
-              保存
+              {t('common.save')}
             </Button>
           </div>
         </div>
@@ -505,29 +533,29 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
       {/* URL Modal */}
       <Modal show={showUrlModal} onClose={() => setShowUrlModal(false)}>
         <div className="p-4 border-b border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
-          <h3 className="text-xl font-semibold">从 URL 添加服务器</h3>
+          <h3 className="text-xl font-semibold">{t('database.addFromPostgreSQLUrl')}</h3>
         </div>
         <div className="p-4">
           <div className="mb-4">
             <div className="block mb-2">
-              <Label htmlFor="serverUrl">PostgreSQL URL</Label>
+              <Label htmlFor="serverUrl">{t('database.postgreSQLUrl')}</Label>
             </div>
             <Input
               id="serverUrl"
               type="text"
               value={serverUrl}
               onChange={e => setServerUrl(e.target.value)}
-              placeholder="postgresql://username:password@host:port/database"
+              placeholder={t('database.urlPlaceholder')}
             />
           </div>
         </div>
         <div className="p-4 border-t border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
           <div className="flex gap-2 justify-end w-full">
             <Button color="light" onClick={() => setShowUrlModal(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button color="blue" onClick={addServerFromUrl} disabled={!serverUrl.trim()}>
-              添加
+              {t('common.add')}
             </Button>
           </div>
         </div>

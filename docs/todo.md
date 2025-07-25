@@ -1,1 +1,3 @@
 [ ] make logo
+[ ] updater
+[ ] screenshot

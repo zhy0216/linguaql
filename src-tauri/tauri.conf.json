@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "linguaql",
+  "productName": "LinguaQL",
   "version": "0.1.0",
   "identifier": "com.linguaql.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "linguaql",
+        "title": "LinguaQL",
         "width": 800,
         "height": 520
       }

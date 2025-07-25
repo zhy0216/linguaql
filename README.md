@@ -35,7 +35,7 @@ For detailed development setup, architecture overview, and contribution guidelin
 
 ## 🤝 Acknowledgments
 
-LinguaQL draws inspiration from excellent database tools in the ecosystem. Special thanks to [Postico 2](https://eggerapps.at/postico2/) by Egger Apps for setting a high standard in PostgreSQL client design and user experience. Their attention to detail and user-centric approach has influenced many aspects of LinguaQL's interface and functionality.
+LinguaQL draws inspiration from excellent database tools in the ecosystem. Special thanks to [Postico 2](https://eggerapps.at/postico2/) by Egger Apps for setting a high standard in PostgreSQL client design and user experience.
 
 ## 📄 License
 

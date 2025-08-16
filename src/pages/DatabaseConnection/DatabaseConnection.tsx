@@ -275,7 +275,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">{t('database.serverManagement')}</h3>
           {onOpenSettings && (
-            <Button size="sm" variant="outline" onClick={onOpenSettings} title="Settings">
+            <Button size="sm" variant="ghost" onClick={onOpenSettings} title="Settings">
               ⚙️
             </Button>
           )}
@@ -478,7 +478,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
               >
                 {isTestingConnection ? t('database.testing') : t('database.testConnection')}
                 {testSuccess && !isTestingConnection && (
-                  <span className="ml-2 text-green-600">✓</span>
+                  <span className="ml-2 text-success">✓</span>
                 )}
               </Button>
 

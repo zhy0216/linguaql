@@ -119,18 +119,18 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('settings.settings')}</h1>
-            <p className="text-gray-600 mt-1">{t('settings.configurePreferences')}</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('settings.settings')}</h1>
+            <p className="text-muted-foreground mt-1">{t('settings.configurePreferences')}</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
             >
               ← {t('common.back')}
             </button>
@@ -138,20 +138,20 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </div>
 
         {/* Language Configuration Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
           <div className="flex items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">{t('settings.language')}</h2>
+            <h2 className="text-xl font-semibold text-card-foreground">{t('settings.language')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 {t('settings.selectLanguage')}
               </label>
               <select
                 value={currentLanguage}
                 onChange={e => handleLanguageChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent appearance-none bg-background text-foreground"
               >
                 <option value="en">{t('settings.english')}</option>
                 <option value="zh">{t('settings.chinese')}</option>
@@ -161,28 +161,28 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </div>
 
         {/* Theme Configuration Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">{t('settings.theme')}</h2>
+            <h2 className="text-xl font-semibold text-card-foreground">{t('settings.theme')}</h2>
             <button
               onClick={toggleDarkMode}
               className={`px-4 py-2 rounded-lg text-sm transition-colors border ${
                 isDarkMode
-                  ? 'bg-gray-800 text-white border-gray-600 hover:bg-gray-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  ? 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'
+                  : 'bg-background text-foreground border-border hover:bg-accent'
               }`}
             >
               {isDarkMode ? '🌙 Dark' : '☀️ Light'}
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4">{t('settings.themeDescription')}</p>
+          <p className="text-sm text-muted-foreground mb-4">{t('settings.themeDescription')}</p>
 
           {/* Theme Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
-              className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition-colors"
+              className="w-full px-4 py-3 text-left bg-background border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent hover:border-border transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -197,27 +197,27 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                         <>
                           <div className="flex space-x-1">
                             <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
+                              className="w-4 h-4 rounded-full border border-border"
                               style={{ backgroundColor: preview.light }}
                             />
                             <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
+                              className="w-4 h-4 rounded-full border border-border"
                               style={{ backgroundColor: preview.dark }}
                             />
                             <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
+                              className="w-4 h-4 rounded-full border border-border"
                               style={{ backgroundColor: preview.primary }}
                             />
                           </div>
-                          <span className="font-medium text-gray-900">{currentTheme.title}</span>
+                          <span className="font-medium text-foreground">{currentTheme.title}</span>
                         </>
                       );
                     }
-                    return <span className="text-gray-500">Select a theme</span>;
+                    return <span className="text-muted-foreground">Select a theme</span>;
                   })()}
                 </div>
                 <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${
+                  className={`w-5 h-5 text-muted-foreground transition-transform ${
                     isThemeDropdownOpen ? 'rotate-180' : ''
                   }`}
                   fill="none"
@@ -236,7 +236,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
             {/* Dropdown Menu */}
             {isThemeDropdownOpen && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto">
                 {themeSettings.availableThemes.map(theme => {
                   const preview = getThemePreview(theme);
                   const isSelected = theme.name === themeSettings.selectedTheme;
@@ -244,8 +244,8 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                   return (
                     <div
                       key={theme.name}
-                      className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
-                        isSelected ? 'bg-blue-50' : ''
+                      className={`p-4 cursor-pointer transition-colors hover:bg-accent border-b border-border last:border-b-0 ${
+                        isSelected ? 'bg-accent' : ''
                       }`}
                       onClick={() => {
                         handleThemeChange(theme.name);
@@ -257,30 +257,30 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                           {/* Theme Preview */}
                           <div className="flex space-x-1">
                             <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
+                              className="w-4 h-4 rounded-full border border-border"
                               style={{ backgroundColor: preview.light }}
                             />
                             <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
+                              className="w-4 h-4 rounded-full border border-border"
                               style={{ backgroundColor: preview.dark }}
                             />
                             <div
-                              className="w-4 h-4 rounded-full border border-gray-300"
+                              className="w-4 h-4 rounded-full border border-border"
                               style={{ backgroundColor: preview.primary }}
                             />
                           </div>
 
                           {/* Theme Info */}
                           <div>
-                            <h3 className="font-medium text-gray-900">{theme.title}</h3>
-                            <p className="text-sm text-gray-600">{theme.description}</p>
+                            <h3 className="font-medium text-popover-foreground">{theme.title}</h3>
+                            <p className="text-sm text-muted-foreground">{theme.description}</p>
                           </div>
                         </div>
 
                         {/* Selected Indicator */}
                         {isSelected && (
                           <svg
-                            className="w-5 h-5 text-blue-500"
+                            className="w-5 h-5 text-primary"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -300,9 +300,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           </div>
 
           {themeSettings.availableThemes.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               <svg
-                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -320,12 +320,14 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </div>
 
         {/* OpenAI Configuration Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">{t('settings.openaiConfig')}</h2>
+            <h2 className="text-xl font-semibold text-card-foreground">
+              {t('settings.openaiConfig')}
+            </h2>
             <button
               onClick={resetOpenAIConfig}
-              className="px-4 py-2 text-sm  text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
+              className="px-4 py-2 text-sm text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-colors border border-destructive/20"
             >
               {t('settings.resetSettings')}
             </button>
@@ -334,7 +336,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           <div className="space-y-4">
             {/* API Key */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 {t('settings.apiKey')}
               </label>
               <div className="relative">
@@ -343,12 +345,12 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                   value={settings.openai.apiKey}
                   onChange={e => handleInputChange('apiKey', e.target.value)}
                   placeholder="Enter your OpenAI API key"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent pr-10 bg-background text-foreground"
                 />
                 <button
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
                 >
                   {showApiKey ? (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -381,7 +383,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
             {/* Base URL */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 {t('settings.baseUrl')}
               </label>
               <input
@@ -389,21 +391,21 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 value={settings.openai.baseUrl}
                 onChange={e => handleInputChange('baseUrl', e.target.value)}
                 placeholder="https://openrouter.ai/api/v1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
               />
-              <p className="text-xs text-gray-500 mt-1">Default: OpenRouter API endpoint</p>
+              <p className="text-xs text-muted-foreground mt-1">Default: OpenRouter API endpoint</p>
             </div>
 
             {/* Model */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 {t('settings.model')}
               </label>
               <div className="relative">
                 <select
                   value={settings.openai.model}
                   onChange={e => handleInputChange('model', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent appearance-none bg-background text-foreground"
                 >
                   {commonModels.map(model => (
                     <option key={model} value={model}>
@@ -411,7 +413,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-foreground">
                   <svg
                     className="fill-current h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -421,12 +423,12 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                   </svg>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Or enter a custom model name</p>
+              <p className="text-xs text-muted-foreground mt-1">Or enter a custom model name</p>
             </div>
 
             {/* Custom Model Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 {t('settings.customModel')}
               </label>
               <input
@@ -434,15 +436,15 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 value={commonModels.includes(settings.openai.model) ? '' : settings.openai.model}
                 onChange={e => handleInputChange('model', e.target.value)}
                 placeholder="Enter custom model name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
               />
             </div>
           </div>
           {/* Info Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+          <div className="bg-accent border border-border rounded-lg p-4 mt-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -451,17 +453,17 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
+                <h3 className="text-sm font-medium text-accent-foreground">
                   {t('settings.aboutOpenRouter')}
                 </h3>
-                <div className="mt-2 text-sm text-blue-700">
+                <div className="mt-2 text-sm text-accent-foreground">
                   <p>{t('settings.openRouterInfo')}</p>
                   <p className="mt-2">
                     <a
                       href="https://openrouter.ai"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium underline hover:text-blue-600"
+                      className="font-medium underline hover:text-primary"
                     >
                       {t('settings.getApiKeyLink')}
                     </a>
@@ -473,9 +475,9 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </div>
 
         {/* SQL Statement Types Configuration Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-card-foreground">
               {t('settings.sqlStatementTypes')}
             </h2>
             <button
@@ -483,42 +485,44 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 resetSQLValidationConfig();
                 setSqlConfig(getSQLValidationConfig());
               }}
-              className="px-4 py-2 rounded-lg text-sm text-orange-600 hover:text-orange-800 hover:bg-orange-50 transition-colors border border-orange-200"
+              className="px-4 py-2 rounded-lg text-sm text-destructive hover:text-destructive/80 hover:bg-destructive/10 transition-colors border border-destructive/20"
             >
               {t('settings.resetSettings')}
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4">{t('settings.sqlStatementTypesDescription')}</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            {t('settings.sqlStatementTypesDescription')}
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {sqlConfig.enabledStatementTypes.map(statementType => (
               <div
                 key={statementType.type}
-                className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="flex items-start space-x-3 p-3 border border-border rounded-lg hover:bg-accent"
               >
                 <input
                   type="checkbox"
                   id={`stmt-${statementType.type}`}
                   checked={statementType.requiresSafetyCheck}
                   onChange={e => handleStatementTypeToggle(statementType.type, e.target.checked)}
-                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="mt-1 h-4 w-4 text-primary focus:ring-ring border-input rounded"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <label
                       htmlFor={`stmt-${statementType.type}`}
-                      className="block text-sm font-medium text-gray-900 cursor-pointer"
+                      className="block text-sm font-medium text-foreground cursor-pointer"
                     >
                       {statementType.type.toUpperCase()}
                     </label>
                     {statementType.requiresSafetyCheck && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground">
                         {t('settings.safetyCheck')}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {t(`settings.statementTypes.${statementType.type}`)}
                   </p>
                 </div>

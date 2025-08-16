@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
 import DatabaseConnection from './pages/DatabaseConnection/DatabaseConnection';
 import Query from './pages/Query';
 import Settings from './pages/Settings';
@@ -33,6 +35,30 @@ function App() {
     window.addEventListener('popstate', handleUrlChange);
     return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
+
+  // // 设置关闭到启动栏功能和dock图标点击处理
+  // useEffect(() => {
+  //   const setupWindowHandlers = async () => {
+  //     const appWindow = getCurrentWindow();
+
+  //     // 设置关闭请求处理器
+  //     const unlistenClose = await appWindow.onCloseRequested((event) => {
+  //       event.preventDefault();
+  //       // 隐藏窗口而不是关闭应用
+  //       appWindow.hide();
+  //     });
+
+  //     return unlistenClose
+  //   };
+
+  //   const unlistenPromise = setupWindowHandlers();
+
+  //   return () => {
+  //     if (unlistenPromise) {
+  //       unlistenPromise.then(unlisten => unlisten());
+  //     }
+  //   };
+  // }, []);
 
   return (
     <div className="App">

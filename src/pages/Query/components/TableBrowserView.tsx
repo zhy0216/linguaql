@@ -12,6 +12,7 @@ import {
   dbService,
 } from '@/services/DBService';
 import { TableColumnInfo } from '../../../types/database';
+import { Pagination } from '@/components/ui/pagination';
 
 // Re-export types for compatibility with existing filter controls
 export type FilterOperator =
@@ -112,19 +113,7 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
     convertSortToTableSort,
   ]);
 
-  // Load data when dependencies change
-  useEffect(() => {
-    loadTableData();
-  }, [loadTableData]);
-
-  // Reset to first page when applied filters or sort change
-  useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [appliedFilterConfigs, sortConfig]);
-
-  // Reset state when table changes
+  // Reset state when table changes and load initial data
   useEffect(() => {
     setCurrentPage(1);
     setSortConfig(null);
@@ -132,6 +121,20 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
     setAppliedFilterConfigs([]);
     setTableData(null);
   }, [selectedTable]);
+
+  // Load data when filters, sort, or page change (but not when table changes)
+  useEffect(() => {
+    if (selectedTable) {
+      loadTableData();
+    }
+  }, [appliedFilterConfigs, sortConfig, currentPage]);
+
+  // Reset to first page when applied filters or sort change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [appliedFilterConfigs, sortConfig]);
 
   // Filter management functions
   const handleAddFilter = useCallback(() => {
@@ -241,6 +244,18 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
             rowCount={tableData.totalCount}
             maxHeight="calc(100vh - 180px)"
           />
+
+          {/* Pagination */}
+          {tableData.totalPages > 1 && (
+            <div className="absolute right-4 bottom-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={tableData.totalPages}
+                onPageChange={handlePageChange}
+                className="flex items-center"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import { QueryResult } from '@/services/DBService';
 import TableCellContent from './TableCellContent';
 
@@ -55,6 +55,7 @@ interface ResultsTableProps {
   onSort: (column: string) => void;
   showFilterInfo?: boolean;
   originalRowCount?: number;
+  showPagination?: boolean;
   rowCount?: number;
   maxHeight?: string;
 }
@@ -67,6 +68,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   showFilterInfo = false,
   rowCount,
   maxHeight,
+  showPagination,
 }) => {
   const { t } = useTranslation();
 
@@ -95,7 +97,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     return data.columns.map(columnName => ({
       id: columnName,
       accessorKey: columnName,
-      size: 150,
       minSize: 80,
       maxSize: 150,
       header: ({ column }) => {
@@ -149,7 +150,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     columnResizeMode: 'onChange',
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: 50,
       },
     },
   });
@@ -242,27 +243,29 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         <div className="text-xs text-gray-500">
           {rowCount !== undefined && t('query.showingRows', { count: rowCount })}
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-xs text-gray-600">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+        {table.getPageCount() > 1 && (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-xs text-gray-600">
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   );

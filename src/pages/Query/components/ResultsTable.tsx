@@ -95,6 +95,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     return data.columns.map(columnName => ({
       id: columnName,
       accessorKey: columnName,
+      size: 150,
+      minSize: 80,
+      maxSize: 150,
       header: ({ column }) => {
         const isSorted = column.getIsSorted();
         return (
@@ -119,7 +122,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         );
       },
       cell: ({ row }) => (
-        <div className="text-xs">
+        <div className="text-xs overflow-hidden text-ellipsis">
           <TableCellContent
             cellValue={row.getValue(columnName)}
             columnName={columnName}
@@ -142,6 +145,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    enableColumnResizing: false,
+    columnResizeMode: 'onChange',
     initialState: {
       pagination: {
         pageSize: 10,
@@ -187,7 +192,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
-                  <TableHead key={header.id} className="bg-gray-50 text-xs">
+                  <TableHead
+                    key={header.id}
+                    className="bg-gray-50 text-xs"
+                    style={{ width: header.getSize() }}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -201,7 +210,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               table.getRowModel().rows.map(row => (
                 <TableRow key={row.id} className="bg-white dark:border-gray-700 dark:bg-gray-800">
                   {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id} className="px-4 py-2 text-xs">
+                    <TableCell
+                      key={cell.id}
+                      className="px-4 py-2 text-xs"
+                      style={{ width: cell.column.getSize() }}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

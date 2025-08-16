@@ -15,7 +15,7 @@ const TableCellContent: React.FC<TableCellContentProps> = ({
   cellValue,
   columnName,
   rowIndex,
-  maxLength = 100,
+  maxLength = 30,
 }) => {
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);

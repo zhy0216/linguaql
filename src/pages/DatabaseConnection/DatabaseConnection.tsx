@@ -316,7 +316,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                       </div>
                     </div>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
                       className="ml-1 h-6 w-6 min-w-6 p-0 flex items-center justify-center"
                       onClick={(e: React.MouseEvent) => {

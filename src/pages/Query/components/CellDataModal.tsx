@@ -104,7 +104,7 @@ const CellDataModal: React.FC<CellDataModalProps> = ({
                 }}
               />
             ) : (
-              <div className="p-4 max-h-96 overflow-auto">
+              <div className="p-4 max-h-96 overflow-auto" style={{ maxWidth: '470px' }}>
                 <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words font-mono">
                   {formattedValue}
                 </pre>

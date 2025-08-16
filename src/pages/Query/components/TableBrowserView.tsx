@@ -241,33 +241,6 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
             rowCount={tableData.totalCount}
             maxHeight="calc(100vh - 180px)"
           />
-
-          {/* Pagination */}
-          {tableData.totalPages > 1 && (
-            <div className="absolute right-4 bottom-6">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  ←
-                </Button>
-                <span className="text-sm text-gray-600">
-                  {currentPage} / {tableData.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= tableData.totalPages}
-                >
-                  →
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pagination } from 'flowbite-react';
+import { Button } from '@/components/ui/button';
 import ResultsTable from './ResultsTable';
 import FilterControls from './FilterControls';
 import {
@@ -245,13 +245,27 @@ const TableBrowserView: React.FC<TableBrowserViewProps> = ({
           {/* Pagination */}
           {tableData.totalPages > 1 && (
             <div className="absolute right-4 bottom-6">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={tableData.totalPages}
-                onPageChange={handlePageChange}
-                showIcons
-                className="flex items-center"
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  ←
+                </Button>
+                <span className="text-sm text-gray-600">
+                  {currentPage} / {tableData.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= tableData.totalPages}
+                >
+                  →
+                </Button>
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Select, TextInput } from 'flowbite-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { TableColumnInfo } from '../../../types/database';
 import { validateFilterValue } from '../../../utils/filterUtils';
 
@@ -241,20 +249,20 @@ const FilterControls: React.FC<FilterControlsProps> = ({
       <div className="flex gap-8 items-center mb-2">
         <h3 className="text-sm font-semibold">{t('query.filters')}</h3>
         <div className="flex gap-1">
-          <Button size="xs" onClick={onAddFilter}>
+          <Button size="sm" onClick={onAddFilter}>
             {t('query.addFilter')}
           </Button>
           {filterConfigs.length > 0 && (
             <>
               <Button
-                size="xs"
-                color={hasValidationErrors ? 'gray' : 'blue'}
+                size="sm"
+                variant={hasValidationErrors ? 'secondary' : 'default'}
                 onClick={handleApplyFilters}
                 disabled={hasValidationErrors}
               >
                 {t('query.applyFilters')}
               </Button>
-              <Button size="xs" color="gray" onClick={onClearAllFilters}>
+              <Button size="sm" variant="secondary" onClick={onClearAllFilters}>
                 {t('query.clearAll')}
               </Button>
             </>
@@ -269,59 +277,67 @@ const FilterControls: React.FC<FilterControlsProps> = ({
           {filterConfigs.map((filter, index) => (
             <div key={index} className="flex gap-2 items-center flex-wrap">
               <Select
-                sizing="sm"
                 value={filter.column}
-                onChange={e => handleColumnChange(index, e.target.value)}
-                className="min-w-[120px]"
+                onValueChange={value => handleColumnChange(index, value)}
               >
-                <option value="">{t('query.selectColumn')}</option>
-                {availableColumns.map((column, colIndex) => (
-                  <option key={colIndex} value={column}>
-                    {column}
-                  </option>
-                ))}
+                <SelectTrigger className="min-w-[120px]">
+                  <SelectValue placeholder={t('query.selectColumn')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableColumns.map((column, colIndex) => (
+                    <SelectItem key={colIndex} value={column}>
+                      {column}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
               <Select
-                sizing="sm"
                 value={filter.operator}
-                onChange={e =>
-                  onUpdateFilter(index, { operator: e.target.value as FilterOperator })
+                onValueChange={value =>
+                  onUpdateFilter(index, { operator: value as FilterOperator })
                 }
                 disabled={!filter.column}
-                className="min-w-[100px]"
               >
-                {(() => {
-                  const columnDataType = getColumnDataType(filter.column, columnInfos);
-                  const availableOperators = getAvailableOperators(columnDataType);
-                  const filteredOptions = allOperatorOptions.filter(option =>
-                    availableOperators.includes(option.value)
-                  );
-                  return filteredOptions.map((option: { value: FilterOperator; label: string }) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ));
-                })()}
+                <SelectTrigger className="min-w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(() => {
+                    const columnDataType = getColumnDataType(filter.column, columnInfos);
+                    const availableOperators = getAvailableOperators(columnDataType);
+                    const filteredOptions = allOperatorOptions.filter(option =>
+                      availableOperators.includes(option.value)
+                    );
+                    return filteredOptions.map(
+                      (option: { value: FilterOperator; label: string }) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      )
+                    );
+                  })()}
+                </SelectContent>
               </Select>
               {operatorRequiresValue(filter.operator) && (
                 <div className="flex-1 min-w-[100px] max-w-xs">
                   {isBooleanColumn(filter.column, columnInfos) ? (
                     <Select
-                      sizing="sm"
                       value={filter.value}
-                      onChange={e => handleValueChange(index, e.target.value)}
+                      onValueChange={value => handleValueChange(index, value)}
                       disabled={!filter.column}
-                      color={validationErrors[index] ? 'failure' : undefined}
                     >
-                      <option value="">{t('query.selectValue')}</option>
-                      <option value="true">{t('common.true')}</option>
-                      <option value="false">{t('common.false')}</option>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('query.selectValue')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">{t('common.true')}</SelectItem>
+                        <SelectItem value="false">{t('common.false')}</SelectItem>
+                      </SelectContent>
                     </Select>
                   ) : (
-                    <TextInput
+                    <Input
                       type="text"
                       placeholder={t('query.filterValue')}
-                      sizing="sm"
                       value={filter.value}
                       onChange={e => handleValueChange(index, e.target.value)}
                       onKeyDown={e => {
@@ -330,7 +346,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
                         }
                       }}
                       disabled={!filter.column}
-                      color={validationErrors[index] ? 'failure' : undefined}
+                      className={validationErrors[index] ? 'border-red-500' : ''}
                     />
                   )}
                   {validationErrors[index] && (
@@ -338,7 +354,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
                   )}
                 </div>
               )}
-              <Button size="xs" color="failure" onClick={() => onRemoveFilter(index)}>
+              <Button size="sm" variant="destructive" onClick={() => onRemoveFilter(index)}>
                 {t('common.remove')}
               </Button>
             </div>

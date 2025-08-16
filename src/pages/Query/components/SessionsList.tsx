@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'flowbite-react';
+import { Button } from '@/components/ui/button';
 import { QuerySession } from '../../../stores/querySessionStore';
 
 interface SessionsListProps {
@@ -75,7 +75,7 @@ const SessionsList: React.FC<SessionsListProps> = ({
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-semibold">{t('query.sessions')}</h3>
         <div className="flex gap-1">
-          <Button size="xs" onClick={onCreateNewSession}>
+          <Button size="sm" onClick={onCreateNewSession}>
             {t('query.newSession')}
           </Button>
         </div>

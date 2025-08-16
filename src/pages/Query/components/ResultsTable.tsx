@@ -1,6 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from 'flowbite-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { QueryResult } from '@/services/DBService';
 import TableCellContent from './TableCellContent';
 
@@ -83,11 +90,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         className="overflow-x-auto overflow-y-scroll"
         style={{ maxHeight: maxHeight || 'calc(100vh - 350px)' }}
       >
-        <Table hoverable className="text-xs">
-          <TableHead>
+        <Table className="text-xs">
+          <TableHeader>
             <TableRow>
               {data.columns.map((column, index) => (
-                <TableHeadCell
+                <TableHead
                   key={index}
                   className="cursor-pointer select-none bg-gray-50 text-xs"
                   onClick={() => onSort(column)}
@@ -102,10 +109,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                         : '↕'}
                     </span>
                   </div>
-                </TableHeadCell>
+                </TableHead>
               ))}
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody className="divide-y">
             {data.rows.map((row, rowIndex) => (
               <TableRow key={rowIndex} className="bg-white dark:border-gray-700 dark:bg-gray-800">

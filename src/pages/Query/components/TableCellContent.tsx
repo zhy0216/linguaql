@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'flowbite-react';
+import { Button } from '@/components/ui/button';
 import { formatCellValue, truncateText } from '@/utils/cellUtils';
 import CellDataModal from './CellDataModal';
 
@@ -42,12 +42,10 @@ const TableCellContent: React.FC<TableCellContentProps> = ({
         <span className="break-words whitespace-pre-wrap">{truncated}</span>
         {isTruncated && (
           <Button
-            size="xs"
-            color="gray"
+            variant="outline"
+            size="sm"
             onClick={handleShowMore}
-            className="text-xs p-0 min-w-fit flex-shrink-0"
-            outline
-            style={{ padding: '0px 2px 5px 2px', height: '12px' }}
+            className="text-xs px-1 py-0 h-4 min-w-fit flex-shrink-0"
           >
             ...
           </Button>

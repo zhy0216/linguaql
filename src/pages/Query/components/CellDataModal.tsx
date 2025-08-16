@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Button } from 'flowbite-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
@@ -44,40 +45,23 @@ const CellDataModal: React.FC<CellDataModalProps> = ({
   };
 
   return (
-    <Modal show={isOpen} onClose={onClose} size="4xl">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {t('query.cellData')}
-            </h2>
-            <span className="text-sm text-gray-500">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <span>{t('query.cellData')}</span>
+            <span className="text-sm text-gray-500 font-normal">
               ({columnName}, {t('query.row')} {rowIndex + 1})
             </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              {t('query.fullData')}
-            </h3>
+            <h3 className="text-lg font-medium">{t('query.fullData')}</h3>
             <Button
               size="sm"
-              color={isCopied ? 'success' : 'gray'}
+              variant={isCopied ? 'default' : 'secondary'}
               onClick={handleCopy}
               className="text-xs"
             >
@@ -133,12 +117,12 @@ const CellDataModal: React.FC<CellDataModalProps> = ({
         </div>
 
         <div className="flex justify-end mt-6">
-          <Button onClick={onClose} color="gray">
+          <Button onClick={onClose} variant="secondary">
             {t('common.close')}
           </Button>
         </div>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 };
 

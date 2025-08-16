@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
-import { Button, TextInput as Input, Label, Badge, Modal } from 'flowbite-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useServerConfigStore } from '../../stores/serverConfigStore';
 import { DatabaseConfig, ConnectionResult, ServerConfig } from '../../types/database';
 import dbService from '../../services/DBService';
@@ -271,7 +275,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">{t('database.serverManagement')}</h3>
           {onOpenSettings && (
-            <Button size="xs" outline color="light" onClick={onOpenSettings} title="Settings">
+            <Button size="sm" variant="outline" onClick={onOpenSettings} title="Settings">
               ⚙️
             </Button>
           )}
@@ -281,7 +285,7 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
           <Button className="w-full" onClick={() => setShowNewServerModal(true)}>
             + {t('database.addServer')}
           </Button>
-          <Button color="light" className="w-full" onClick={() => setShowUrlModal(true)}>
+          <Button variant="outline" className="w-full" onClick={() => setShowUrlModal(true)}>
             + {t('database.addFromUrl')}
           </Button>
         </div>
@@ -312,8 +316,8 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
                       </div>
                     </div>
                     <Button
-                      color="failure"
-                      size="xs"
+                      variant="destructive"
+                      size="sm"
                       className="ml-1 h-6 w-6 min-w-6 p-0 flex items-center justify-center"
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
@@ -500,66 +504,62 @@ const DatabaseConnection: React.FC<Props> = ({ onDatabaseConnected, onOpenSettin
       )}
 
       {/* New Server Modal */}
-      <Modal show={showNewServerModal} onClose={() => setShowNewServerModal(false)}>
-        <div className="p-4 border-b border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
-          <h3 className="text-xl font-semibold">{t('database.saveCurrentServerConfig')}</h3>
-        </div>
-        <div className="p-4">
-          <div className="mb-4">
-            <div className="block mb-2">
+      <Dialog open={showNewServerModal} onOpenChange={setShowNewServerModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('database.saveCurrentServerConfig')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
               <Label htmlFor="serverName">{t('database.serverName')}</Label>
+              <Input
+                id="serverName"
+                type="text"
+                value={newServerName}
+                onChange={e => setNewServerName(e.target.value)}
+                placeholder={t('database.enterServerName')}
+              />
             </div>
-            <Input
-              id="serverName"
-              type="text"
-              value={newServerName}
-              onChange={e => setNewServerName(e.target.value)}
-              placeholder={t('database.enterServerName')}
-            />
           </div>
-        </div>
-        <div className="p-4 border-t border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
-          <div className="flex gap-2 justify-end w-full">
-            <Button color="light" onClick={() => setShowNewServerModal(false)}>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowNewServerModal(false)}>
               {t('common.cancel')}
             </Button>
-            <Button color="blue" onClick={addNewServer} disabled={!newServerName.trim()}>
+            <Button onClick={addNewServer} disabled={!newServerName.trim()}>
               {t('common.save')}
             </Button>
           </div>
-        </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
 
       {/* URL Modal */}
-      <Modal show={showUrlModal} onClose={() => setShowUrlModal(false)}>
-        <div className="p-4 border-b border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
-          <h3 className="text-xl font-semibold">{t('database.addFromPostgreSQLUrl')}</h3>
-        </div>
-        <div className="p-4">
-          <div className="mb-4">
-            <div className="block mb-2">
-              <Label htmlFor="serverUrl">{t('database.postgreSQLUrl')}</Label>
+      <Dialog open={showUrlModal} onOpenChange={setShowUrlModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('database.addFromPostgreSQLUrl')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="postgresUrl">{t('database.postgreSQLUrl')}</Label>
+              <Input
+                id="postgresUrl"
+                type="text"
+                value={serverUrl}
+                onChange={e => setServerUrl(e.target.value)}
+                placeholder="postgresql://username:password@host:port/database"
+              />
             </div>
-            <Input
-              id="serverUrl"
-              type="text"
-              value={serverUrl}
-              onChange={e => setServerUrl(e.target.value)}
-              placeholder={t('database.urlPlaceholder')}
-            />
           </div>
-        </div>
-        <div className="p-4 border-t border-indigo-100 bg-gradient-to-r from-slate-50 to-blue-50">
-          <div className="flex gap-2 justify-end w-full">
-            <Button color="light" onClick={() => setShowUrlModal(false)}>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowUrlModal(false)}>
               {t('common.cancel')}
             </Button>
-            <Button color="blue" onClick={addServerFromUrl} disabled={!serverUrl.trim()}>
+            <Button onClick={addServerFromUrl} disabled={!serverUrl.trim()}>
               {t('common.add')}
             </Button>
           </div>
-        </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -2,8 +2,6 @@
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
-@plugin "flowbite-react/plugin/tailwindcss";
-@source "../.flowbite-react/class-list.json";
 
 .cm-sql-statement-highlight {
   background-color: rgba(59, 130, 246, 0.1);

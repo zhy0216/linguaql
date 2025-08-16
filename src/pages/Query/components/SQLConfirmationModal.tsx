@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'flowbite-react';
+import { Button } from '@/components/ui/button';
 
 interface SQLConfirmationModalProps {
   isOpen: boolean;
@@ -49,10 +49,10 @@ const SQLConfirmationModal: React.FC<SQLConfirmationModalProps> = ({
         </div>
 
         <div className="flex justify-end space-x-3">
-          <Button color="gray" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel}>
             {t('common.cancel')}
           </Button>
-          <Button color="failure" onClick={onConfirm}>
+          <Button variant="destructive" onClick={onConfirm}>
             {t('query.executeAnyway')}
           </Button>
         </div>

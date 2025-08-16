@@ -68,7 +68,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   showFilterInfo = false,
   rowCount,
   maxHeight,
-  showPagination,
 }) => {
   const { t } = useTranslation();
 

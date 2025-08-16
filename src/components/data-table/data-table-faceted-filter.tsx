@@ -18,7 +18,15 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import type { Option } from '@/components/data-table/data-table';
+// import type { Option } from '@/components/data-table/data-table';
+
+// Define Option type locally since it's not exported from data-table
+interface Option {
+  label: string;
+  value: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  count?: number;
+}
 
 interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;

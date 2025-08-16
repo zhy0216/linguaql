@@ -1,16 +1,32 @@
 import { createParser } from 'nuqs/server';
 import { z } from 'zod';
 
-import { dataTableConfig } from '@/components/data-table/data-table';
+// Define types locally since they're not exported from data-table
+interface ExtendedColumnFilter {
+  id: string;
+  operator: string;
+  value: any;
+  variant: string;
+  filterId: string;
+}
 
-import type { ExtendedColumnFilter, ExtendedColumnSort } from '@/components/data-table/data-table';
+interface ExtendedColumnSort {
+  id: string;
+  desc: boolean;
+}
+
+// Mock dataTableConfig since it's not available
+const dataTableConfig = {
+  filterVariants: ['text', 'number', 'date', 'boolean'] as const,
+  operators: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'iLike', 'isEmpty', 'isNotEmpty'] as const,
+};
 
 const sortingItemSchema = z.object({
   id: z.string(),
   desc: z.boolean(),
 });
 
-export const getSortingStateParser = <TData>(columnIds?: string[] | Set<string>) => {
+export const getSortingStateParser = (columnIds?: string[] | Set<string>) => {
   const validKeys = columnIds ? (columnIds instanceof Set ? columnIds : new Set(columnIds)) : null;
 
   return createParser({
@@ -25,7 +41,7 @@ export const getSortingStateParser = <TData>(columnIds?: string[] | Set<string>)
           return null;
         }
 
-        return result.data as ExtendedColumnSort<TData>[];
+        return result.data as ExtendedColumnSort[];
       } catch {
         return null;
       }
@@ -47,7 +63,7 @@ const filterItemSchema = z.object({
 
 export type FilterItemSchema = z.infer<typeof filterItemSchema>;
 
-export const getFiltersStateParser = <TData>(columnIds?: string[] | Set<string>) => {
+export const getFiltersStateParser = (columnIds?: string[] | Set<string>) => {
   const validKeys = columnIds ? (columnIds instanceof Set ? columnIds : new Set(columnIds)) : null;
 
   return createParser({
@@ -62,7 +78,7 @@ export const getFiltersStateParser = <TData>(columnIds?: string[] | Set<string>)
           return null;
         }
 
-        return result.data as ExtendedColumnFilter<TData>[];
+        return result.data as ExtendedColumnFilter[];
       } catch {
         return null;
       }

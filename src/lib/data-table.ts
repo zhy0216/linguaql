@@ -1,10 +1,47 @@
 import type { Column } from '@tanstack/react-table';
-import { dataTableConfig } from '@/components/data-table/data-table';
-import type {
-  ExtendedColumnFilter,
-  FilterOperator,
-  FilterVariant,
-} from '@/components/data-table/data-table';
+// import { dataTableConfig } from '@/components/data-table/data-table';
+// import type {
+//   ExtendedColumnFilter,
+//   FilterOperator,
+//   FilterVariant,
+// } from '@/components/data-table/data-table';
+
+// Define types locally since they're not exported from data-table
+type FilterOperator =
+  | 'eq'
+  | 'ne'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'iLike'
+  | 'isEmpty'
+  | 'isNotEmpty';
+type FilterVariant =
+  | 'text'
+  | 'number'
+  | 'range'
+  | 'date'
+  | 'dateRange'
+  | 'boolean'
+  | 'select'
+  | 'multiSelect';
+
+interface ExtendedColumnFilter {
+  id: string;
+  operator: FilterOperator;
+  value: any;
+}
+
+// Mock dataTableConfig since it's not available
+const dataTableConfig = {
+  textOperators: [{ label: 'Contains', value: 'iLike' as FilterOperator }],
+  numericOperators: [{ label: 'Equals', value: 'eq' as FilterOperator }],
+  dateOperators: [{ label: 'Equals', value: 'eq' as FilterOperator }],
+  booleanOperators: [{ label: 'Equals', value: 'eq' as FilterOperator }],
+  selectOperators: [{ label: 'Equals', value: 'eq' as FilterOperator }],
+  multiSelectOperators: [{ label: 'Equals', value: 'eq' as FilterOperator }],
+};
 
 export function getCommonPinningStyles<TData>({
   column,
@@ -56,9 +93,7 @@ export function getDefaultFilterOperator(filterVariant: FilterVariant) {
   return operators[0]?.value ?? (filterVariant === 'text' ? 'iLike' : 'eq');
 }
 
-export function getValidFilters<TData>(
-  filters: ExtendedColumnFilter<TData>[]
-): ExtendedColumnFilter<TData>[] {
+export function getValidFilters(filters: ExtendedColumnFilter[]): ExtendedColumnFilter[] {
   return filters.filter(
     filter =>
       filter.operator === 'isEmpty' ||

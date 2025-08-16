@@ -1,5 +1,12 @@
 import type { ColumnSort, Row, RowData } from '@tanstack/react-table';
-import type { DataTableConfig } from '@/components/data-table/data-table';
+// import type { DataTableConfig } from '@/components/data-table/data-table';
+
+// Define DataTableConfig type locally since it's not exported from data-table
+interface DataTableConfig {
+  filterVariants: readonly string[];
+  operators: readonly string[];
+  joinOperators: readonly string[];
+}
 import type { FilterItemSchema } from '@/lib/parsers';
 
 declare module '@tanstack/react-table' {

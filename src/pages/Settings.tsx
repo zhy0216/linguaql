@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../stores/settingsStore';
-import { OpenAIConfig } from '../types/config';
+import { OpenAIConfig, ThemeConfig } from '../types/config';
+import { themeService } from '../services/ThemeService';
 
 interface SettingsProps {
   onBack: () => void;
@@ -18,10 +19,38 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     getSQLValidationConfig,
     updateStatementTypeRequiresSafetyCheck,
     resetSQLValidationConfig,
+    getThemeSettings,
+    setSelectedTheme,
+    loadAvailableThemes,
   } = useSettingsStore();
   const [showApiKey, setShowApiKey] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
   const [sqlConfig, setSqlConfig] = useState(getSQLValidationConfig());
+  const [themeSettings, setThemeSettings] = useState(getThemeSettings());
+  const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load available themes on component mount
+  useEffect(() => {
+    const initializeThemes = async () => {
+      await loadAvailableThemes();
+      setThemeSettings(getThemeSettings());
+    };
+    initializeThemes();
+  }, [loadAvailableThemes, getThemeSettings]);
+
+  // Handle clicks outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsThemeDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLanguageChange = (language: string) => {
     setCurrentLanguage(language);
@@ -39,6 +68,47 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
       [field]: value,
     };
     updateOpenAIConfig(newConfig);
+  };
+
+  const handleThemeChange = async (themeName: string) => {
+    setSelectedTheme(themeName);
+    setThemeSettings(getThemeSettings());
+
+    // Apply the theme immediately
+    try {
+      const theme = await themeService.getTheme(themeName);
+      if (theme) {
+        themeService.applyTheme(theme, isDarkMode);
+      }
+    } catch (error) {
+      console.error('Failed to apply theme:', error);
+    }
+  };
+
+  const toggleDarkMode = async () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+
+    // Toggle dark class on document
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Reapply current theme with new mode
+    try {
+      const currentTheme = await themeService.getTheme(themeSettings.selectedTheme);
+      if (currentTheme) {
+        themeService.applyTheme(currentTheme, newDarkMode);
+      }
+    } catch (error) {
+      console.error('Failed to apply theme:', error);
+    }
+  };
+
+  const getThemePreview = (theme: ThemeConfig) => {
+    return themeService.getThemePreview(theme);
   };
 
   const commonModels = [
@@ -88,6 +158,165 @@ const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               </select>
             </div>
           </div>
+        </div>
+
+        {/* Theme Configuration Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">{t('settings.theme')}</h2>
+            <button
+              onClick={toggleDarkMode}
+              className={`px-4 py-2 rounded-lg text-sm transition-colors border ${
+                isDarkMode
+                  ? 'bg-gray-800 text-white border-gray-600 hover:bg-gray-700'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {isDarkMode ? '🌙 Dark' : '☀️ Light'}
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-4">{t('settings.themeDescription')}</p>
+
+          {/* Theme Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+              className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {/* Current theme preview */}
+                  {(() => {
+                    const currentTheme = themeSettings.availableThemes.find(
+                      t => t.name === themeSettings.selectedTheme
+                    );
+                    if (currentTheme) {
+                      const preview = getThemePreview(currentTheme);
+                      return (
+                        <>
+                          <div className="flex space-x-1">
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: preview.light }}
+                            />
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: preview.dark }}
+                            />
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: preview.primary }}
+                            />
+                          </div>
+                          <span className="font-medium text-gray-900">{currentTheme.title}</span>
+                        </>
+                      );
+                    }
+                    return <span className="text-gray-500">Select a theme</span>;
+                  })()}
+                </div>
+                <svg
+                  className={`w-5 h-5 text-gray-400 transition-transform ${
+                    isThemeDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isThemeDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                {themeSettings.availableThemes.map(theme => {
+                  const preview = getThemePreview(theme);
+                  const isSelected = theme.name === themeSettings.selectedTheme;
+
+                  return (
+                    <div
+                      key={theme.name}
+                      className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                        isSelected ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => {
+                        handleThemeChange(theme.name);
+                        setIsThemeDropdownOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {/* Theme Preview */}
+                          <div className="flex space-x-1">
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: preview.light }}
+                            />
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: preview.dark }}
+                            />
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-300"
+                              style={{ backgroundColor: preview.primary }}
+                            />
+                          </div>
+
+                          {/* Theme Info */}
+                          <div>
+                            <h3 className="font-medium text-gray-900">{theme.title}</h3>
+                            <p className="text-sm text-gray-600">{theme.description}</p>
+                          </div>
+                        </div>
+
+                        {/* Selected Indicator */}
+                        {isSelected && (
+                          <svg
+                            className="w-5 h-5 text-blue-500"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {themeSettings.availableThemes.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <svg
+                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"
+                />
+              </svg>
+              <p>{t('settings.loadingThemes')}</p>
+            </div>
+          )}
         </div>
 
         {/* OpenAI Configuration Card */}

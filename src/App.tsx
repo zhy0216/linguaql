@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import DatabaseConnection from './pages/DatabaseConnection/DatabaseConnection';
 import Query from './pages/Query';
 import Settings from './pages/Settings';
+import { useTheme } from './hooks/useTheme';
 import './i18n';
 
 function App() {
+  // Initialize theme system
+  useTheme();
+
   // 检查URL参数以确定初始页面
   const getInitialPage = (): 'connection' | 'query' | 'settings' => {
     // 当在Tauri环境中通过窗口打开时，检查URL参数
